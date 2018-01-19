@@ -70,12 +70,12 @@ Installation
 
     git clone [this repo]
     
-    cd autoCorrect
+    cd autocorrect
     
     python setup.py sdist
     
     pip install -e .
-    #pip install autCorrect
+    #pip install autcorrect
 
 
 Usage
@@ -91,7 +91,7 @@ Usage
 Documentation
 =============
 
-https://autonorm.readthedocs.io/
+https://autocorrect.readthedocs.io/
 
 Development
 ===========
