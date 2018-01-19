@@ -67,8 +67,11 @@ Installation
 ============
 
 ::
-
-    pip install autonorm
+    git clone [this repo]
+    cd autoCorrect
+    python setup.py sdist
+    pip install -e .
+    #pip install autCorrect
 
 Documentation
 =============
