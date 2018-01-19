@@ -78,6 +78,16 @@ Installation
     #pip install autCorrect
 
 
+Usage
+============
+
+::
+
+    python
+    import autocorrect
+    
+
+
 Documentation
 =============
 
