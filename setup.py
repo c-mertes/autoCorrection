@@ -23,7 +23,7 @@ def read(*names, **kwargs):
 
 
 setup(
-    name='autocorrect',
+    name='autoCorrect',
     version='1.0.0',
     license='MIT license',
     description='...',
@@ -70,7 +70,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'autocorrector = autocorrector.cli:main',
+            'autocorrector = autoCorrect.cli:main',
         ]
     },
 )
