@@ -158,62 +158,11 @@ class Autoencoder():
         self.predicted = self.model.predict([self.predict_data, self.sf_predict])
         return self.predicted
 
-    def append_val_loss(self):
-        self.val_loss = self.get_current_val_loss()
-        self.val_losses.append((self.val_loss, self.encoding_dim))
-
-    def get_val_losses(self):
-        return self.val_losses
-
     def get_dispersion(self):
         with self.sess.as_default():
             self.predicted_dispersion = self.model.get_layer('dispersion').theta.eval()
         return self.predicted_dispersion
-    
-    def get_corr_for_test(self):
-        rho_test = np.empty([self.predicted_test.shape[0]-1])
-        pval_test = np.empty([self.predicted_test.shape[0]-1])
-        for i in range(0,self.predicted_test.shape[0]-1):
-            rho_test[i], pval_test[i]=sp.stats.spearmanr(self.means_data.splited_data.test[i],
-                                                         self.predicted_test[i])
-        rho_test = rho_test[~np.isnan(rho_test)]
-        return rho_test
-        
-    def get_corr_for_train(self):    
-        rho_train = np.empty([self.predicted_train.shape[0]-1])
-        pval_train = np.empty([self.predicted_train.shape[0]-1])
-        for i in range(0,self.predicted_train.shape[0]-1):
-            rho_train[i], pval_train[i]=sp.stats.spearmanr(self.means_data.splited_data.train[i],
-                                                           self.predicted_train[i])
-        rho_train = rho_train[~np.isnan(rho_train)]
-        return rho_train
 
-    def fit_on_different_hidden_dim(self, list_of_hidden_dim=(1, 2, 3)):
-        # ,5,10,30,100,300,500,1000,10000)
-        self.reset()
-        fig1, ax1 = mp.subplots()
-        for i in list_of_hidden_dim:
-            print(i)
-            self.model = self.get_autoencoder(encoding_dim=i)
-            nb = NB(self.model.get_layer('dispersion').theta)
-            self.loss = nb.loss
-            self.compile_model()
-            self.fit_model()
-            self.append_val_loss()
-            
-            self.predicted_train = self._predict_train()
-            self.predicted_test = self._predict_test()
-            
-        self.val_losses_array = np.asarray(self.get_val_losses())
-        print(self.val_losses_array)
-        self.sorted_val_losses = self.val_losses_array[self.val_losses_array[:, 1].argsort()]
-        ax1.plot(self.sorted_val_losses[:, 1], self.sorted_val_losses[:, 0])
-        ax1.set_xlabel("hidden dimension q")
-        ax1.set_ylabel("validation loss value")
-        fig1.savefig("sorted_val_losses.png")
-        self.reset()
 
-    def reset(self):  # gal ir vidurkius
-        self.val_losses = []
-        self.run_session()
+
         
