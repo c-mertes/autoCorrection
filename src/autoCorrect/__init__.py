@@ -8,3 +8,4 @@ from . import r_functions
 from . import autoencoder
 from . import data_utils
 from . import data_utils
+from . import correctors
