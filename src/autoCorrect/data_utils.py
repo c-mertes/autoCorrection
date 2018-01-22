@@ -11,17 +11,19 @@ import h5py
 import dask.array as da
 #from rpy2.robjects.packages import importr
 #from rpy2.robjects.vectors import FloatVector
-import readline
-from rpy2.robjects.packages import importr
-base = importr('base')
-import rpy2.robjects as robjects
-r = robjects.r
-import rpy2.robjects.numpy2ri
-rpy2.robjects.numpy2ri.activate()
-from .r_functions import *
+##
+#import readline
+#from rpy2.robjects.packages import importr
+#base = importr('base')
+#import rpy2.robjects as robjects
+#r = robjects.r
+#import rpy2.robjects.numpy2ri
+#rpy2.robjects.numpy2ri.activate()
+#from .r_functions import *
 from collections import OrderedDict
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
+from ggplot import *
 
 
 class Simulation():
@@ -445,12 +447,13 @@ class TrainTestPreparation():
             median_factor[median_factor == 0] = 1
         return median_factor
     
-    def get_size_factor(self):
-        get_sf = robjects.r['get_sf']
-        self.sample_names = r.c(self.sample_names)
-        sf = np.array(get_sf(self.data, self.sample_names))
-        sf[sf == 0] = 1
-        sf = sf.reshape(sf.shape[0],1)
+    def get_size_factor(self): #  <--------------------- change this function later
+        ##get_sf = robjects.r['get_sf']
+        ##self.sample_names = r.c(self.sample_names)
+        ##sf = np.array(get_sf(self.data, self.sample_names))
+        ##sf[sf == 0] = 1
+        ##sf = sf.reshape(sf.shape[0],1)
+        self.sf = np.ones_like(self.data)
         return sf
     
     def get_scaling_factor(self):
@@ -1018,9 +1021,10 @@ class Evaluation():
         return q[by_orig]
     
     def p_adjust_r_bh(self):
-        stats = importr('stats')
-        p_adjust = stats.p_adjust(robjects.FloatVector(self.p_vals), method = 'BH')
-        return np.array(p_adjust)
+        #stats = importr('stats')
+        #p_adjust = stats.p_adjust(robjects.FloatVector(self.p_vals), method = 'BH')
+        #np.array(p_adjust)
+        return np.array(self.p_vals)
     
     def evaluate_prediction(self, pvals):#########!!!!!!!!!!!!!!!!!!!! replace p_vals_adj
         check_if_true_out = lambda x: 1 if x < 0.05 else 0
@@ -1055,10 +1059,10 @@ class Evaluation():
                     self.p_vals = self.compute_one_sided_p_val()
                 else:
                     self.p_vals = self.compute_two_sided_p_val()
-            #self.p_vals_adj = self.p_adjust_bh()
-            self.p_vals_adj_r = self.p_adjust_r_bh()
+            self.p_vals_adj = self.p_adjust_bh()
+            #self.p_vals_adj_r = self.p_adjust_r_bh()
             if self.param_use_adj_pval:
-                self.prediction_table = self.evaluate_prediction(self.p_vals_adj_r)
+                self.prediction_table = self.evaluate_prediction(self.p_vals_adj)
             else:
                 self.prediction_table = self.evaluate_prediction(self.p_vals)
         else:
@@ -1223,6 +1227,431 @@ class Evaluation():
         plt.close()
 
 
+class EvaluationTable():
+    def __init__(self, counts=None, outlier_idx=None, pred_mu=None,
+                 pred_dispersion=None, prediction_table=None, estimate_each=True,
+                 estimate_all_genes_together=True, is_theta=False,
+                 use_adj_pval=True, compute_one_sided=False,
+                 q="Not provided", out_fc="Not provided", data_origin=" ",
+                 pdf_name="p_eval.pdf"):
+        self.q = q
+        self.fc = out_fc
+        self.data_origin = data_origin
+        self.estimate_all = estimate_all_genes_together
+        self.counts_ini = counts
+        self.outlier_idx_ini = outlier_idx
+        self.mu_ini = pred_mu
+        self.dispersion_ini = pred_dispersion
+        self.param_prediction_table = prediction_table
+        self.param_is_theta = is_theta
+        self.param_use_adj_pval = use_adj_pval
+        self.compute_one_sided = compute_one_sided
+        #self.rgba = self.get_color()
+        self.out_gene_idx = self.get_genes_with_out_idx()
+        self.out_sample_idx = self.get_samples_with_out_idx()
+        self.set_init_vectors()
+        self.recompute_outlier_table()
+        with PdfPages(pdf_name) as self.pdf:
+            if estimate_each:
+                self.estimate_all = False
+                print("Genes with outliers: \n")
+                print(self.out_gene_idx[0])
+                #for i in range(self.out_gene_idx[0].shape[0]):
+                #    self.set_init_vectors(gene_idx=self.out_gene_idx[0][i])
+                #    self.recompute_outlier_table()
+                #    self.plot_predicted_outliers(title="Gene ",
+                #                                 idx=self.out_gene_idx[0][i])
+                #    self.plot_true_outliers(title="Gene ",
+                #                            idx=self.out_gene_idx[0][i])
+                #    self.plot_against_expected_pvals(title="Gene ",
+                #                            idx=self.out_gene_idx[0][i])
+                
+                #print("Samples with outliers: \n")
+                #print(self.out_sample_idx[0])
+                #for i in range(self.out_sample_idx[0].shape[0]):
+                    #self.set_init_vectors_sample(sample_idx=self.out_sample_idx[0][i])
+                    #self.recompute_outlier_table()
+                    #self.plot_predicted_outliers(title="Sample with idx ",idx=self.out_sample_idx[0][i])
+                    #self.plot_true_outliers(title="Sample with idx ",idx=self.out_gene_idx[0][i])            
+            
+    
+    def get_genes_with_out_idx(self):
+        s =np.sum(self.outlier_idx_ini, axis=0)
+        genes_with_out = np.where(s)
+        return(genes_with_out)
+    
+    def get_samples_with_out_idx(self):
+        s =np.sum(self.outlier_idx_ini, axis=1)
+        samples_with_out = np.where(s)
+        return(samples_with_out)
+
+    def set_init_vectors(self, gene_idx=None):
+        if gene_idx is None:
+            gene_idx = self.out_gene_idx[0][0]
+        if self.estimate_all:
+            self.counts = self.counts_ini.flatten()
+            self.dispersion = self.dispersion_ini.flatten()
+            self.mu = self.mu_ini.flatten()
+            self.outlier_idx = self.outlier_idx_ini.flatten()
+        else:
+            print(gene_idx)
+            self.counts = self.counts_ini[:,gene_idx]
+            self.dispersion = self.dispersion_ini[:,gene_idx]
+            self.mu = self.mu_ini[:,gene_idx]
+            self.outlier_idx = self.outlier_idx_ini[:,gene_idx]
+            
+    def set_init_vectors_sample(self, sample_idx=None):
+        if sample_idx is None:
+            sample_idx = self.out_sample_idx[0][0]
+        self.counts = self.counts_ini[sample_idx]
+        self.dispersion = self.dispersion_ini[sample_idx]
+        self.mu = self.mu_ini[sample_idx]
+        self.outlier_idx = self.outlier_idx_ini[sample_idx]
+
+    def compute_two_sided_p_val_theta(self):
+        '''If theta provided'''
+        p_vals = []
+        #shape = mu.shape
+        for x_ij,theta_ij,mu_ij in zip(self.counts,
+                                       self.dispersion, self.mu):
+            cdf_val = sp.stats.nbinom.cdf(k=x_ij, n=1/theta_ij, p=(1/theta_ij)/mu_ij+(1/theta_ij) )
+            pmf_at_x_ij = sp.stats.nbinom.pmf(k=x_ij, n=1/theta_ij, p=(1/theta_ij)/mu_ij+(1/theta_ij) )
+            p_val = min(cdf_val, 1-cdf_val+pmf_at_x_ij, 0.5)*2
+            p_vals.append(p_val)
+        p_vals = np.asarray(p_vals)  #.reshape(shape)
+        return p_vals
+    
+    def compute_two_sided_p_val(self):
+        '''If dispersion provided'''
+        p_vals = []
+        #shape = mu.shape
+        for x_ij,disp_ij,mu_ij in zip(self.counts,
+                                       self.dispersion, self.mu):
+            cdf_val = sp.stats.nbinom.cdf(k=x_ij, n=disp_ij, p=disp_ij/(mu_ij+disp_ij) )
+            #print("------\n")
+            #print("k: ",x_ij)
+            #print("mu: ",mu_ij)
+            #print("cdf: ",cdf_val)
+            
+            pmf_at_x_ij = sp.stats.nbinom.pmf(k=x_ij, n=disp_ij, p=disp_ij/(mu_ij+disp_ij) )
+            p_val = min(cdf_val, 1-cdf_val+pmf_at_x_ij, 0.5)*2
+            #print("pval ", p_val)
+            p_vals.append(p_val)
+        p_vals = np.asarray(p_vals)  #.reshape(shape)
+        return p_vals
+    
+    def compute_one_sided_p_val(self):
+        '''If dispersion provided'''
+        p_vals = []
+        #shape = mu.shape
+        for x_ij,disp_ij,mu_ij in zip(self.counts,
+                                       self.dispersion, self.mu):
+            p_val = sp.stats.nbinom.cdf(k=x_ij, n=disp_ij, p=disp_ij/(mu_ij+disp_ij) )
+            p_vals.append(p_val)
+        p_vals = np.asarray(p_vals)  #.reshape(shape)
+        return p_vals
+    
+    def p_adjust_bh(self):
+        p_vals = self.p_vals
+        by_descend = p_vals.argsort()[::-1]
+        by_orig = by_descend.argsort()
+        steps = float(len(p_vals)) / np.arange(len(p_vals), 0, -1)
+        q = np.minimum(1, np.minimum.accumulate(steps * p_vals[by_descend]))
+        return q[by_orig]
+    
+    def p_adjust_r_bh(self):
+        #stats = importr('stats')
+        #p_adjust = stats.p_adjust(robjects.FloatVector(self.p_vals), method = 'BH')
+        #np.array(p_adjust)
+        return np.array(self.p_vals)
+    
+    def evaluate_prediction(self, pvals):#########!!!!!!!!!!!!!!!!!!!! replace p_vals_adj
+        check_if_true_out = lambda x: 1 if x < 0.05 else 0
+        prediction_table = np.vstack( (pvals, list(map(check_if_true_out, pvals)) )).T
+        return prediction_table
+        
+    def prepare_outlier_table(self):
+        #self.outlier_idx = self.outlier_idx.flatten()
+        table_x = np.concatenate((self.prediction_table,
+                                self.outlier_idx.reshape(self.outlier_idx.shape[0],1)), axis=1)
+        table = np.concatenate((table_x,
+                                self.counts.reshape(self.outlier_idx.shape[0],1)), axis=1)
+        self.outlier_table = table[table[:,0].argsort()]
+        self.outlier_table_pd = pd.DataFrame({'Pvalue':self.outlier_table[:,0],
+                                              'Predicted_id':self.outlier_table[:,1],
+                                              'True_id':self.outlier_table[:,2],
+                                              'log(Counts+1)':np.log1p(self.outlier_table[:,3])
+                                             })
+        self.outlier_table_pd['Predicted as outlier'] = np.where(self.outlier_table_pd['Predicted_id']==1, 'yes', 'no')
+        self.outlier_table_pd['True outlier'] = np.where(self.outlier_table_pd['True_id']==1, 'yes', 'no')
+        return self.outlier_table
+    
+    def prepare_outlier_table_adj(self):
+        #self.outlier_idx = self.outlier_idx.flatten()
+        table_x = np.concatenate((self.prediction_table_adj,
+                                self.outlier_idx.reshape(self.outlier_idx.shape[0],1)), axis=1)
+        table = np.concatenate((table_x,
+                                self.counts.reshape(self.outlier_idx.shape[0],1)), axis=1)
+        self.outlier_table = table[table[:,0].argsort()]
+        self.outlier_table_pd = pd.DataFrame({'Pvalue':self.outlier_table[:,0],
+                                              'Predicted':self.outlier_table[:,1],
+                                              'True':self.outlier_table[:,2],
+                                              'log(Counts+1)':np.log1p(self.outlier_table[:,3])
+                                             })
+        self.outlier_table_pd['Predicted as outlier'] = np.where(self.outlier_table_pd['Predicted_id']==1, 'yes', 'no')
+        self.outlier_table_pd['True outlier'] = np.where(self.outlier_table_pd['True_id']==1, 'yes', 'no')
+        return self.outlier_table
+    
+    def recompute_outlier_table(self):
+        if self.param_prediction_table is None:
+            if self.param_is_theta == True:
+                print("Parameter is theta")
+                #self.p_vals = self.compute_two_sided_p_val_theta()
+            else:
+                if self.compute_one_sided:
+                    self.p_vals = self.compute_one_sided_p_val()
+                else:
+                    self.p_vals = self.compute_two_sided_p_val()
+            self.p_vals_adj = self.p_adjust_bh()
+            #self.p_vals_adj_r = self.p_adjust_r_bh()
+            if self.param_use_adj_pval:
+                self.prediction_table = self.evaluate_prediction(self.p_vals_adj)
+            else:
+                self.prediction_table = self.evaluate_prediction(self.p_vals)
+        else:
+            self.prediction_table = self.param_prediction_table            
+        self.outlier_table = self.prepare_outlier_table()
+    
+
+class EvalPlot():
+    def __init__(self, counts=None, outlier_idx=None, pred_mu=None,
+                 pred_dispersion=None, prediction_table=None, estimate_one_gene=True,
+                 estimate_all_genes_together=True, is_theta=False,
+                 use_adj_pval=True, compute_one_sided=False,
+                 q="Not provided", out_fc="Not provided", data_origin=" ",
+                 pdf_name="p_eval.pdf", outlier_table=None, outlier_table_pd=None, gene_idx=None):
+        self.q = q
+        self.fc = out_fc
+        self.data_origin = data_origin
+        self.estimate_all = estimate_all_genes_together
+        self.counts_ini = counts
+        self.outlier_idx_ini = outlier_idx
+        self.mu_ini = pred_mu
+        self.dispersion_ini = pred_dispersion
+        self.param_prediction_table = prediction_table
+        self.param_is_theta = is_theta
+        self.param_use_adj_pval = use_adj_pval
+        self.compute_one_sided = compute_one_sided
+        self.outlier_table = outlier_table
+        self.outlier_table_pd = outlier_table_pd
+        self.out_gene_idx = gene_idx
+        self.tp = self.compute_true_positives()
+        self.fp = self.compute_false_positives()
+        self.rp = self.get_real_positives()
+        self.get_fn_tn_tp_fp()
+        with PdfPages(pdf_name) as self.pdf:
+            self.metric_table()
+            if estimate_all_genes_together:
+                if self.tp_nr !=0 and self.fp_nr !=0: 
+                    self.tpr = self.compute_tpr()
+                    self.fpr = self.compute_fpr()
+                    self.plot_roc()
+            if estimate_one_gene:
+                self.nr=100
+                self.plot_nr_of_true_outliers()
+                self.plot_predicted_outliers(title="Gene ",
+                                             idx=self.out_gene_idx)
+                self.plot_true_outliers(title="Gene ",
+                                        idx=self.out_gene_idx)
+                self.plot_against_expected_pvals(title="Gene ",
+                                        idx=self.out_gene_idx)
+            else:
+                self.nr=1000
+                self.plot_nr_of_true_outliers()
+                self.plot_predicted_outliers(to=self.fp_nr+100,title="All genes, "+"subset of "+str(self.fp_nr+100)+" samples out of "+str(self.outlier_table.shape[0]))
+                self.plot_true_outliers(to=self.fp_nr+100,title="All genes, "+"subset of "+str(self.fp_nr+100)+" samples out of "+str(self.outlier_table.shape[0]))
+                self.plot_against_expected_pvals(title="All genes, all samples")
+
+        
+    def get_color(self, idx=0):
+        cmap = cm.get_cmap('Set3')
+        rgba = cmap(idx)
+        return rgba
+    
+    def get_real_positives(self):
+        return self.outlier_table[:,2] 
+    
+    def compute_true_positives(self):
+        comp_tp = lambda x: 1 if x[1] == x[2] == 1 else 0
+        tp = list(map(comp_tp, self.outlier_table)) 
+        return tp
+    
+    def compute_false_positives(self):
+        comp_fp = lambda x: 1 if x[1] == 1 and x[2] == 0 else 0
+        fp = list(map(comp_fp, self.outlier_table))
+        return fp
+    
+    def get_fn_tn_tp_fp(self):
+        self.tn_nr, self.fp_nr, self.fn_nr, self.tp_nr = confusion_matrix(self.outlier_table[:,2], self.outlier_table[:,1]).ravel()
+
+    def compute_fpr(self):
+        fpr = np.cumsum(self.fp) / max(np.cumsum(self.fp)) #np.repeat(np.count_nonzero(self.outlier_table[:,1]==0), len(self.fp)) 
+        return fpr
+    
+    def compute_tpr(self):
+        tpr = np.cumsum(self.tp) / max(np.cumsum(self.tp)) #np.repeat(np.count_nonzero(self.outlier_table[:,1]), len(self.tp))
+        return tpr
+    
+    def plot_roc(self):
+        roc_auc = auc(self.fpr, self.tpr)
+        fig = plt.figure()
+        fig.suptitle('Receiver operating characteristic')
+        ax = fig.add_subplot(111)
+        fig.subplots_adjust(top=0.8)
+        ax.set_title('Middle autoencoder layer q = %s\nOutliers injected with fold change fc = %s'%(self.q,self.fc), fontsize=14)
+        ax.plot(self.fpr, self.tpr, color='darkorange',
+                 lw=2, label='ROC curve(area = %0.2f)' % roc_auc)
+        #plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        #plt.xlim([0.0, 1.0])
+        #plt.ylim([0.0, 1.05])
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        plt.legend(loc="lower right")
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
+        #plt.gcf().clear()
+    
+    def plot_nr_of_true_outliers(self):
+        cumulative_true_outliers = np.cumsum(self.rp)[0:self.nr-1]
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title(str(self.nr)+' samples with smallest p-values, q = %s'%(self.q), fontsize=14) #\nOutliers injected with fold change fc = %s ,self.fc
+        ax.plot(range(0,self.nr-1), cumulative_true_outliers)
+        ax.set_ylabel('Number of true outliers')
+        ax.set_xlabel('Sorted according to p-value')
+        #plt.title('Middle autoencoder layer q = %s\nOutliers injected with fold change fc = %s'%(self.q,self.fc))
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
+        #plt.gcf().clear()
+        
+    def plot_predicted_outliers(self,to=None,title=" ",idx=" "):
+        if to is None:
+            to = self.outlier_table.shape[0]
+        fig = plt.figure()
+        fig.suptitle('%s'%(str(title)+str(idx)),fontsize=16)
+        ax = fig.add_subplot(111)
+        fig.subplots_adjust(top=0.85)
+        ax.set_title('q = %s'%(self.q), fontsize=14) #\nOutliers injected with fold change fc = %s ,self.fc
+        #ax.scatter(range(0,len(self.outlier_table[0:to,3])),
+         #               self.outlier_table[0:to,3],
+         #               c=self.outlier_table[0:to,1], alpha=0.5,
+         #              label="Predicted as outlier")   
+        ax.scatter(self.outlier_table[0:to,0],
+                        np.log1p(self.outlier_table[0:to,3]),
+                        c=self.outlier_table[0:to,1], alpha=0.5,
+                       label="Predicted as outliers")
+        ax.set_xlabel("sroted according pval")
+        ax.set_ylabel("Counts")
+        #plt.yscale("log")
+        plt.legend(loc="upper right", markerscale=0.7, scatterpoints=1, fontsize=10)
+        ax = plt.gca()
+        leg = ax.get_legend()
+        leg.legendHandles[0].set_color('yellow')
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
+        #plt.gcf().clear()
+        p = ggplot(aes(x='Pvalue', y='log(Counts+1)', color='Predicted as outlier'), data=self.outlier_table_pd)  + geom_point(size=100) +\
+            labs(title=str(title)+str(idx), x="p-values") + geom_vline(x=[0.01, 0.05], color="black")# + theme(legend.text=element_text(size=20))#+ scale_y_log() #+\
+            #theme(legend.text=element_text(size=20))
+        p
+        print(p)
+        
+    def plot_true_outliers(self,to=None,title=" ",idx=" "):
+        if to is None:
+            to = self.outlier_table.shape[0]
+        fig = plt.figure()
+        fig.suptitle('%s'%(str(title)+str(idx)),fontsize=16)
+        ax = fig.add_subplot(111)
+        fig.subplots_adjust(top=0.85)
+        ax.set_title('q = %s'%(self.q), fontsize=14) #\nOutliers injected with fold change fc = %s ,self.fc
+        #ax.scatter(range(0,len(self.outlier_table[0:to,3])),
+         #               self.outlier_table[0:to,3],
+          #              c=self.outlier_table[0:to,2], alpha=0.5,
+           #            label="True outliers")
+        ax.scatter(self.outlier_table[0:to,0],
+                        np.log1p(self.outlier_table[0:to,3]),
+                        c=self.outlier_table[0:to,2], alpha=0.5,
+                       label="True outliers")
+        ax.set_xlabel("sroted according pval")
+        ax.set_ylabel("Counts")
+        #plt.yscale("log")
+        plt.legend(loc="upper right", markerscale=0.7, scatterpoints=1, fontsize=10)
+        ax = plt.gca()
+        leg = ax.get_legend()
+        leg.legendHandles[0].set_color('yellow')
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
+        p = ggplot(aes(x='Pvalue', y='log(Counts+1)', color='True outlier'), data=self.outlier_table_pd)  + geom_point(size=100) +\
+            labs(title=str(title)+str(idx), x="p-values") + geom_vline(x=[0.05], color="black")+ geom_vline(x=[0.01], color="black",linetype='dashed') # + theme(legend.text=element_text(size=20))#+ #geom_segment(aes(x=0.5, y=0, xend=0.5, yend=1))#geom_vline(xintercept = 1, size=3)#+\
+            #theme(legend.text=element_text(size=20))
+        p
+        print(p)
+        
+    def plot_against_expected_pvals(self,title=" ",idx=" "):
+        fig = plt.figure()
+        fig.suptitle('%s'%(str(title)+str(idx)),fontsize=16)
+        ax = fig.add_subplot(111)
+        fig.subplots_adjust(top=0.8)
+        ax.set_title('Middle autoencoder layer q = %s\nOutliers injected with fold change fc = %s'%(self.q,self.fc), fontsize=14)
+        expected = np.arange(1,self.outlier_table[:,0].shape[0]+1)/self.outlier_table[:,0].shape[0]
+        ax.scatter(self.outlier_table[:,0], expected)
+        ax.set_xlabel("p-values")
+        ax.set_ylabel("expected p-values")
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
+        
+    def metric_table(self):
+        self.recall = self.tp_nr / (self.tp_nr + self.fp_nr)
+        self.precision = self.tp_nr / (self.tp_nr + self.fn_nr)
+        self.accuracy = (self.tp_nr + self.tn_nr) / (self.tp_nr + self.tn_nr + self.fn_nr + self.fp_nr) 
+        
+        fig = plt.figure()
+        fig.suptitle('Metrics', fontsize=16,fontweight='bold')
+        ax = fig.add_subplot(111)
+        fig.subplots_adjust(top=0.75)
+        ax.set_title('Middle autoencoder layer q = %s\nOutliers injected with fold change fc = %s\n%s'%(self.q,self.fc,self.data_origin), fontsize=14)
+        ax.text(1, 7, 'Accuracy: %0.2f' % self.accuracy, style='italic',
+                bbox={'facecolor':'lightgrey', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(1, 5, 'Precision: %0.2f' % self.precision, style='italic',
+                bbox={'facecolor':'lightgrey', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(1, 3, 'Recall: %0.2f' % self.recall, style='italic',
+                bbox={'facecolor':'lightgrey', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(9, 7, 'Confussion table: ', style='italic', fontsize=15)
+
+        ax.text(15, 5, 'TP: %.0f' % int(self.tp_nr), style='italic',
+                bbox={'facecolor':'papayawhip', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(9, 3, 'FN: %.0f' % int(self.fn_nr), style='italic',
+                bbox={'facecolor':'papayawhip', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(15, 3, 'TN: %.0f' % int(self.tn_nr), style='italic',
+                bbox={'facecolor':'papayawhip', 'alpha':0.5, 'pad':10}, fontsize=15)
+
+        ax.text(9, 5, 'FP: %.0f' % int(self.fp_nr), style='italic',
+                bbox={'facecolor':'papayawhip', 'alpha':0.5, 'pad':10}, fontsize=15)
+        ax.axis([0, 19, 0, 9])
+        plt.axis('off')
+        plt.show()
+        self.pdf.savefig(fig)
+        plt.close()
 
 
 
