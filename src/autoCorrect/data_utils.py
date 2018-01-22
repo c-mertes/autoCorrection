@@ -414,21 +414,24 @@ class TrainTestData():
         self.size_factor_test = sf_test
 
 class TrainTestPreparation():
-    def __init__(self, data, sample_names=None,
+    def __init__(self, data, sf=None,
+                 sample_names=None,
                  rescale_per_gene=False,
                  rescale_per_sample=False,
                  rescale_by_global_median=True,
-                 compute_sf=True):
+                 no_rescaling=True, ones_sf=False):
         self.data = data
+        self.sf = sf
         self.sample_names = sample_names
         self.rescale_per_gene = rescale_per_gene
         self.rescale_per_sample = rescale_per_sample
         self.rescale_by_global_median = rescale_by_global_median
-        if compute_sf:
+        self.ones_sf = ones_sf
+        if no_rescaling:
+            self.splited_data = self.split_data_no_rescaling()
+        else:
             self.scaling_factor = self.get_scaling_factor()
             self.splited_data = self.split_data()
-        else:
-            self.splited_data = self.split_data_no_sf()
 
     def get_median_factor(self, data, axis=None):      
         if axis is None: # use global median 
@@ -459,8 +462,14 @@ class TrainTestPreparation():
             median_factor = np.repeat(median_factor, self.data.shpe[1], axis=1)
         elif self.rescale_by_global_median:
             median_factor = self.get_median_factor(self.data)
-        sf = self.get_size_factor()
-        scaling_factor = np.multiply(sf, median_factor)
+        if self.sf is not None:
+            pass
+        else:
+            if self.ones_sf:
+                self.sf = np.ones_like(self.data)
+            else:
+                self.sf = self.get_size_factor()
+        scaling_factor = np.multiply(self.sf, median_factor)
         scaling_factor = np.power(scaling_factor, -1.0)
         return scaling_factor
 
@@ -474,7 +483,7 @@ class TrainTestPreparation():
         self.splited_data = TrainTestData(x_train, x_test, sf_train, sf_test)
         return self.splited_data
 
-    def split_data_no_sf(self):
+    def split_data_no_rescaling(self):
         x_train, x_test = train_test_split(self.data, random_state=False,
                                            test_size=0.1)
         self.splited_data = TrainTestData(x_train, x_test)
