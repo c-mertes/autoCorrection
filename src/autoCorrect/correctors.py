@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from .autoencoder import Autoencoder
 from .data_utils import TrainTestPreparation, ZeroInjectionWhereMean, FoldChInjectionWhereMean
+import numpy as np
 
 class Corrector():        
     @abstractmethod
