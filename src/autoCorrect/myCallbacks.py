@@ -53,8 +53,8 @@ class PlotLosses(keras.callbacks.Callback):
         mp.yscale('log')
         mp.ylabel('Loss value')
         mp.xlabel('Epochs')
-        mp.legend()
-        mp.show();
+        #mp.legend()
+        mp.savefig('AutoCorrectLoss.png');
         
     def on_train_end(self, logs={}):
         print("Last loss: ", self.losses[-1])

@@ -407,7 +407,13 @@ class InjectionOfOutliersDuringSimulation():
         self.simulated_data.get_counts()
         return self.simulated_data
 
-
+    
+class ProcessedData():
+    def __init__(self, x, sf=None):
+        self.data = x
+        self.size_factor = sf
+        
+    
 class TrainTestData():
     def __init__(self, x_train, x_test, sf_train=None, sf_test=None):
         self.train = x_train
@@ -415,13 +421,15 @@ class TrainTestData():
         self.size_factor_train = sf_train
         self.size_factor_test = sf_test
 
+        
 class TrainTestPreparation():
     def __init__(self, data, sf=None,
                  sample_names=None,
                  rescale_per_gene=False,
                  rescale_per_sample=False,
                  rescale_by_global_median=True,
-                 no_rescaling=True, ones_sf=False):
+                 no_rescaling=True, ones_sf=False,
+                 no_splitting=False):
         self.data = data
         self.sf = sf
         self.sample_names = sample_names
@@ -429,11 +437,18 @@ class TrainTestPreparation():
         self.rescale_per_sample = rescale_per_sample
         self.rescale_by_global_median = rescale_by_global_median
         self.ones_sf = ones_sf
+        self.clip_high_values()
         if no_rescaling:
             self.splited_data = self.split_data_no_rescaling()
         else:
             self.scaling_factor = self.get_scaling_factor()
-            self.splited_data = self.split_data()
+            if no_splitting:
+                self.processed_data = self.get_processed_data()
+            else:
+                self.splited_data = self.split_data()
+            
+    def clip_high_values(self):
+        self.data[self.data > 200000] = 200000        
 
     def get_median_factor(self, data, axis=None):      
         if axis is None: # use global median 
@@ -465,9 +480,7 @@ class TrainTestPreparation():
             median_factor = np.repeat(median_factor, self.data.shpe[1], axis=1)
         elif self.rescale_by_global_median:
             median_factor = self.get_median_factor(self.data)
-        if self.sf is not None:
-            pass
-        else:
+        if self.sf is None:
             if self.ones_sf:
                 self.sf = np.ones_like(self.data)
             else:
@@ -485,6 +498,10 @@ class TrainTestPreparation():
                                            test_size=0.1)
         self.splited_data = TrainTestData(x_train, x_test, sf_train, sf_test)
         return self.splited_data
+    
+    def get_processed_data(self):
+        self.processed_data = ProcessedData(self.data, self.scaling_factor)
+        return self.processed_data
 
     def split_data_no_rescaling(self):
         x_train, x_test = train_test_split(self.data, random_state=False,

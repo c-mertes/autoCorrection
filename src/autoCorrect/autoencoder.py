@@ -131,8 +131,7 @@ class Autoencoder():
                                           epochs=self.epochs,
                                           batch_size=None,
                                           shuffle=True,
-                                          validation_data=([self.test_in,self.sf_test], self.test_out),
-                                          callbacks=[self.plot_losses,],# stoping],
+                                          validation_data=([self.test_in,self.sf_test], self.test_out), callbacks=[self.plot_losses,],# stoping],
                                           verbose=0
                                           )
 
