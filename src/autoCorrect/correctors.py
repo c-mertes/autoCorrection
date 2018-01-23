@@ -32,7 +32,7 @@ class DAECorrector(Corrector):
         self.size_factors = size_factors
         self.parameters = parameters
         self.inject_zeros = inject_zeros
-        #self.injected_outliers = self.inject_outliers()
+        self.injected_outliers = self.inject_outliers()
         self.prepare_data()
         self.corrected = self.correct()
         
@@ -48,18 +48,18 @@ class DAECorrector(Corrector):
     def prepare_data(self):
         self.count_data = TrainTestPreparation(
             data=self.counts.astype(int), sf=self.size_factors, no_rescaling=False)
-        #self.out_data = TrainTestPreparation(
-        #    data=self.injected_outliers.outlier_data.data_with_outliers.astype(int),
-        #    sf=self.size_factors, no_rescaling=False)
+        self.out_data = TrainTestPreparation(
+            data=self.injected_outliers.outlier_data.data_with_outliers.astype(int),
+            sf=self.size_factors, no_rescaling=False)
         self.all_counts = TrainTestPreparation(
             data=self.counts.astype(int), sf=self.size_factors, no_rescaling=False,
             no_splitting=True)
         
     def correct(self):
-        self.ae = Autoencoder(self.count_data.splited_data.train,
-                          self.count_data.splited_data.size_factor_train,
-                          self.count_data.splited_data.test,
-                          self.count_data.splited_data.size_factor_test,
+        self.ae = Autoencoder(self.out_data.splited_data.train,
+                          self.out_data.splited_data.size_factor_train,
+                          self.out_data.splited_data.test,
+                          self.out_data.splited_data.size_factor_test,
                           self.count_data.splited_data.train,
                           self.count_data.splited_data.test,
                           predict_data=self.all_counts.processed_data.data,
