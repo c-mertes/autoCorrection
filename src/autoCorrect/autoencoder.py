@@ -14,13 +14,13 @@ import numpy as np
 import scipy as sp
 import h5py
 
-
+#TODO cleanup
 
 class Autoencoder():
     def __init__(self, train_in=None, sf_train=None, test_in=None,
                  sf_test=None, train_out=None, test_out=None,
                  predict_data=None, sf_predict=None, means_data=None, 
-                 encoding_dim=2, size=10000, optimizer=Adam(),
+                 encoding_dim=2, size=10000, optimizer=Adam(lr=0.001),
                  choose_autoencoder=False,
                  choose_encoder=False, choose_decoder=False, epochs=1100):
         self.train_in = train_in
@@ -42,22 +42,22 @@ class Autoencoder():
         self.choose_encoder = choose_encoder
         self.choose_decoder = choose_decoder
         self.autoenc_model = self.get_autoencoder()
-        self.model = self.set_model()
         self.optimizer = optimizer
         self.loss = self.set_loss()
-        self.compile_model()
+        self.model = self.set_model()
+        #self.compile_model()
         self.sess = tf.Session()
         K.set_session(self.sess)
         self.run_session()
-        self.fit_model()
+        #self.fit_model()
         #self.current_val_loss = self.get_current_val_loss()
         #self.append_val_loss()
-        if not choose_encoder:
-            self.predicted_dispersion = self.get_dispersion()
-        self.predicted_test = self._predict_test()
-        self.predicted_train = self._predict_train()
-        if self.predict_data is not None:
-            self.predicted = self._predict()
+        #if not choose_encoder:
+        #    self.predicted_dispersion = self.get_dispersion()
+        #self.predicted_test = self._predict_test()
+        #self.predicted_train = self._predict_train()
+        #if self.predict_data is not None:
+        #    self.predicted = self.predict()
 
 
     def get_autoencoder(self, encoding_dim=None):
@@ -73,6 +73,7 @@ class Autoencoder():
         mean = Multiply()([mean_scaled, inv_sf])
         self.disp = ConstantDispersionLayer(name='dispersion')
         self.output = self.disp(mean)
+        #self.output = Lambda(name='output')(self.output)
         self.model = Model([self.input_layer, self.sf_layer], self.output)
         return self.model
     
@@ -93,15 +94,6 @@ class Autoencoder():
         self.decoder = Model(encoded_input, output)
         return self.decoder
 
-    def set_model(self):
-        if self.choose_autoencoder:
-            self.model = self.get_autoencoder()
-        elif self.choose_encoder:
-            self.model = self.get_encoder()
-        elif self.choose_decoder:
-            self.model = self.get_decoder()
-        return self.model
-
     def set_loss(self):
         if self.choose_autoencoder:
             nb = NB(self.model.get_layer('dispersion').theta)
@@ -113,25 +105,34 @@ class Autoencoder():
             self.loss = nb.loss
         return self.loss
 
-
+    def set_model(self):
+        if self.choose_autoencoder:
+            self.model = self.get_autoencoder()
+        elif self.choose_encoder:
+            self.model = self.get_encoder()
+        elif self.choose_decoder:
+            self.model = self.get_decoder()
+        return self.model
+    
     def compile_model(self):
         self.model.compile(optimizer=self.optimizer, loss=self.loss)
+        
 
     def run_session(self):
         self.sess.run(tf.global_variables_initializer())
 
     def fit_model(self):
-        self.plot_losses = PlotLosses()
+        #self.plot_losses = PlotLosses()
         #stoping = EarlyStopping(monitor='val_loss',
         #                      min_delta=0,
         #                      patience=20,
         #                      verbose=0, mode='min')
         with self.sess.as_default():
-            self.history = self.model.fit([self.train_in, self.sf_train], self.train_out,  # x_train_log1p, x_train,
+            self.history = self.model.fit({'inp':self.train_in, 'sf':self.sf_train}, self.train_out,  # x_train_log1p, x_train,
                                           epochs=self.epochs,
                                           batch_size=None,
                                           shuffle=True,
-                                          validation_data=([self.test_in,self.sf_test], self.test_out), callbacks=[self.plot_losses,],# stoping],
+                                          validation_data=({'inp':self.test_in,'sf':self.sf_test}, self.test_out), #callbacks=[self.plot_losses,],# stoping],
                                           verbose=0
                                           )
 
@@ -153,7 +154,7 @@ class Autoencoder():
         self.predicted_train = self.model.predict([self.train_in,self.sf_train])
         return self.predicted_train
     
-    def _predict(self):
+    def predict(self):
         self.predicted = self.model.predict([self.predict_data, self.sf_predict])
         return self.predicted
 
