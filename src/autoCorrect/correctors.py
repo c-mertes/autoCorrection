@@ -1,73 +1,50 @@
 from abc import abstractmethod
 from .autoencoder import Autoencoder
-from .data_utils import TrainTestPreparation, ZeroInjectionWhereMean, FoldChInjectionWhereMean
+from .data_utils import TrainTestPreparation, ZeroInjectionWhereMean, FoldChInjectionWhereMean, DataCookerWithPred
+from keras.optimizers import Adam, RMSprop
 import numpy as np
 
 class Corrector():        
     @abstractmethod
-    def correct(self):
+    def correct(self, counts, size_factors, **kwargs):
         pass
 
 
 class DummyCorrector(Corrector):
-    def __init__(self, counts=None, size_factors=None):
-        self.counts = counts
-        self.size_factors = size_factors
-        self.corrected = self.correct()
-    
-    def get_size_factors(self):
-        return self.size_factors
+    def __init__(self):
+        pass
 
-    def correct(self):
+    def correct(self, counts, size_factors, **kwargs):
         return np.ones_like(self.counts)
 
 
-class DAECorrector(Corrector):
-    def __init__(self, counts=None, size_factors=None,
-                 parameters=None, inject_zeros=True):
-        #TODO
-        #parameters as dictionary
-        #reorganize autoencoder class
-        self.counts = counts
-        self.size_factors = size_factors
-        self.parameters = parameters
+class AECorrector(Corrector):
+    def __init__(self, parameters=None, denoisingAE=False,
+                 inject_zeros=True, epochs=2, encoding_dim=10, lr=0.001):
+        self.denoisingAE = denoisingAE
+        #self.parameters = parameters
+        self.epochs = epochs
+        self.encoding_dim=encoding_dim
+        self.lr = lr
         self.inject_zeros = inject_zeros
-        self.injected_outliers = self.inject_outliers()
-        self.prepare_data()
-        self.corrected = self.correct()
         
-    def inject_outliers(self):
-        if self.inject_zeros:
-            self.injected_outliers = ZeroInjectionWhereMean(
-                self.counts, nr_of_out=800)
-        else:
-            self.injected_outliers = FoldChInjectionWhereMean(
-                self.counts, fold=-5, nr_of_out=800)
-        return self.injected_outliers
-        
-    def prepare_data(self):
-        self.count_data = TrainTestPreparation(
-            data=self.counts.astype(int), sf=self.size_factors, no_rescaling=False)
-        self.out_data = TrainTestPreparation(
-            data=self.injected_outliers.outlier_data.data_with_outliers.astype(int),
-            sf=self.size_factors, no_rescaling=False)
-        self.all_counts = TrainTestPreparation(
-            data=self.counts.astype(int), sf=self.size_factors, no_rescaling=False,
-            no_splitting=True)
-        
-    def correct(self):
-        self.ae = Autoencoder(self.out_data.splited_data.train,
-                          self.out_data.splited_data.size_factor_train,
-                          self.out_data.splited_data.test,
-                          self.out_data.splited_data.size_factor_test,
-                          self.count_data.splited_data.train,
-                          self.count_data.splited_data.test,
-                          predict_data=self.all_counts.processed_data.data,
-                          sf_predict=self.all_counts.processed_data.size_factor,
-                          choose_autoencoder=True, epochs=100, encoding_dim=10, size=self.counts.shape[1])
-
-        return self.ae.predicted
-
+    def correct(self, counts, size_factors, **kwargs):
+        self.loader = DataCookerWithPred(counts, inject_outliers=self.denoisingAE,
+                                          pred_counts=counts)# size_factors,
+        self.data = self.loader.data()
+        self.ae = Autoencoder(choose_autoencoder=True,
+                              encoding_dim=self.encoding_dim,
+                              size=counts.shape[1])
+        self.ae.model.compile(optimizer=Adam(lr=self.lr), loss=self.ae.loss)
+        self.ae.model.fit(self.data[0][0], self.data[0][1],  
+                            epochs=self.epochs,
+                            batch_size=None,
+                            shuffle=True,
+                            validation_data=(self.data[1][0], self.data[1][1]),
+                            verbose=0
+                           )
+        self.corrected = self.ae.model.predict(self.data[2][0])
+        return self.corrected
 
 
 
