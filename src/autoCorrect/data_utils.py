@@ -576,6 +576,109 @@ class RescaleBack():
         return self.resc_back_data
 
     
+class DataReader():
+    def __init__(self):
+        pass
+    
+    def read_gtex_skin(self):
+        path="/s/project/scared/GTEx/filtered_counts18k.tsv"
+        self.data = self.read_data(path, sep=" ")
+        return self.data
+    
+    def read_data(self, path, sep):
+        data_pd = pd.read_csv(path, index_col=0,header=0, sep=sep)
+        data = np.transpose(np.array(data_pd.values))
+        return data
+    
+    
+class DataCooker():
+    def __init__(self, counts, size_factors=None,
+                 inject_outliers=False):
+        self.counts=counts
+        if size_factors is not None:
+            self.size_factors = size_factors
+        else:
+            self.size_factors = np.ones_like(counts).astype(float)
+        self.train2_counts = counts.astype(int)
+            
+    def inject_outliers(self, data):
+        if self.inject_zeros:
+            injected_outliers = ZeroInjectionWhereMean(
+                data, nr_of_out=800)
+        else:
+            injected_outliers = FoldChInjectionWhereMean(
+                data, fold=-5, nr_of_out=800)
+        return injected_outliers
+                
+    def prepare_data(self):
+        self.train1_data = TrainTestPreparation(data=self.train1_counts,
+                                                sf=self.size_factors,
+                                                no_rescaling=False)
+        self.train2_data = TrainTestPreparation(data=self.train2_counts,
+                                                sf=self.size_factors,
+                                                no_rescaling=False)
+        
+    def data(self, inject_outliers=False, inject_zeros=True):
+        if inject_outliers:
+            self.inject_zeros = inject_zeros
+            self.injected_outliers = self.inject_outliers(self.counts)
+            self.train1_counts = self.injected_outliers.outlier_data.data_with_outliers.astype(int)
+        else:
+            self.train1_counts = self.counts.astype(int)
+        self.prepare_data()
+        x_train = {'inp': self.train1_data.splited_data.train,
+                    'sf': self.train1_data.splited_data.size_factor_train}                
+        y_train = self.train2_data.splited_data.train        
+        x_valid = {'inp': self.train1_data.splited_data.test,
+                    'sf': self.train1_data.splited_data.size_factor_test}        
+        y_valid = self.train2_data.splited_data.test
+        
+        return (x_train, y_train),(x_valid, y_valid),
+
+    
+class DataCookerWithPred(DataCooker):
+    def __init__(self, counts, size_factors=None,
+                 inject_outliers=False,
+                 pred_counts=None, pred_sf=None):
+        super().__init__(counts, size_factors,
+                 inject_outliers)
+        if pred_counts is not None:
+            self.pred_counts = pred_counts.astype(int)
+            if pred_sf is not None:
+                self.pred_sf = pred_sf
+            else:
+                self.pred_sf = np.ones_like(counts).astype(float)
+        else:
+            self.pred_counts = counts.astype(int)
+            self.pred_sf = self.size_factors
+            
+    def prepare_pred(self):
+        self.pred_data = TrainTestPreparation(data=self.pred_counts,
+                                      sf=self.size_factors,
+                                      no_rescaling=False,
+                                      no_splitting=True)
+    
+    def data(self, inject_outliers=False, inject_zeros=True):
+        if inject_outliers:
+            self.inject_zeros = inject_zeros
+            self.injected_outliers = self.inject_outliers(self.counts)
+            self.train1_counts = self.injected_outliers.outlier_data.data_with_outliers.astype(int)
+        else:
+            self.train1_counts = self.counts.astype(int)
+        self.prepare_data()
+        self.prepare_pred()
+        x_train = {'inp': self.train1_data.splited_data.train,
+                    'sf': self.train1_data.splited_data.size_factor_train}                
+        y_train = self.train2_data.splited_data.train        
+        x_valid = {'inp': self.train1_data.splited_data.test,
+                    'sf': self.train1_data.splited_data.size_factor_test}        
+        y_valid = self.train2_data.splited_data.test
+        x_test = {'inp': self.pred_data.processed_data.data, 
+                    'sf': self.pred_data.processed_data.size_factor}
+        
+        return (x_train, y_train),(x_valid, y_valid), (x_test, ) #y_test
+
+    
 class EvaluationOfOutInjection():
     def __init__(self, out_data, out_idx, orig_data=None,
                  q="None", out_fc="None", data_origin=" ", 
