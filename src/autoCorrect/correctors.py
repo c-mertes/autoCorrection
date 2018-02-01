@@ -3,6 +3,7 @@ from .autoencoder import Autoencoder
 from .data_utils import TrainTestPreparation, ZeroInjectionWhereMean, FoldChInjectionWhereMean, DataCookerWithPred
 from keras.optimizers import Adam, RMSprop
 import numpy as np
+import json
 
 class Corrector():        
     @abstractmethod
@@ -19,15 +20,22 @@ class DummyCorrector(Corrector):
 
 
 class AECorrector(Corrector):
-    def __init__(self, parameters=None, denoisingAE=False,
+    def __init__(self, param_path=None, denoisingAE=False,
                  inject_zeros=True, epochs=2, encoding_dim=10, lr=0.001):
-        self.denoisingAE = denoisingAE
-        #self.parameters = parameters
-        self.epochs = epochs
-        self.encoding_dim=encoding_dim
-        self.lr = lr
-        self.inject_zeros = inject_zeros
-        
+        if param_path is not None:
+            metrics = json.load(open(param_path))
+            self.denoisingAE = metrics['inj_out'] #metrics['param']['data']['inject_outliers']
+            self.inject_zeros = metrics['inj_z'] #metrics['param']['data']['inject_zeros']
+            self.epochs = metrics['epochs'] #metrics['param']['fit']['epochs']
+            self.encoding_dim = metrics['m_emb'] #metrics['param']['model']['encoding_dim']
+            self.lr = metrics['m_lr'] #metrics['param']['model']['lr']
+        else
+            self.denoisingAE = denoisingAE
+            self.inject_zeros = inject_zeros
+            self.epochs = epochs
+            self.encoding_dim=encoding_dim
+            self.lr = lr
+
     def correct(self, counts, size_factors, **kwargs):
         self.loader = DataCookerWithPred(counts, inject_outliers=self.denoisingAE,
                                           pred_counts=counts)# size_factors,

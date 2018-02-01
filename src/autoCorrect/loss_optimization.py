@@ -1,6 +1,7 @@
-from .correctors import *
+import numpy as np
 from .data_utils import DataLoaderWithPred, DataLoader, DataReader
-# kopt and hyoperot imports
+from .autoencoder import Autoencoder
+from keras.optimizers import Adam
 from kopt import CompileFN, KMongoTrials, test_fn
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 
@@ -9,33 +10,35 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 #        pass
 
     def data(inject_outliers=False,inject_zeros=True):
-        dr=data_utils.DataReader()
+        dr=DataReader()
         counts = dr.read_gtex_skin()
-        cook = data_utils.DataCooker(counts)
+        cook = DataCooker(counts)
         data = cook.data(inject_outliers=inject_outliers,inject_zeros=inject_zeros)
         return data
 
     def model(train_data, lr=0.001,
           encoding_dim=128):
         size = train_data[0]["inp"].shape[1]
-        ae = autoencoder.Autoencoder(choose_autoencoder=True, size=size, 
+        ae = Autoencoder(choose_autoencoder=True, size=size, 
                          encoding_dim=encoding_dim)
-        ae.model.compile(optimizer=Adam(lr=lr), loss=ae.loss)
-        model = autoenc.model
+        ae.model.compile(optimizer=Adam(lr=lr), loss=ae.loss)#, metrics=['val_loss']
+        model = ae.model
         return model
 
 #    def objective():
         db_name="correct"
-        exp_name="myexp1"
+        exp_name="myexp2"
         objective = CompileFN(db_name, exp_name,
-                              data_fn=data,
-                              model_fn=model,
-                              loss_metric="loss", # which metric to optimize for
-                              loss_metric_mode="min",  # try to maximize the metric
-                              valid_split=0.2, # use 20% of the training data for the validation set
-                              save_model='best', # checkpoint the best model
-                              save_results=True, # save the results as .json (in addition to mongoDB)
-                              save_dir="./saved_models/")  # p
+                      data_fn=data,
+                      model_fn=model,
+                      #add_eval_metrics=["val_loss"],
+                      loss_metric="loss", # which metric to optimize for
+                      loss_metric_mode="min",  # try to maximize the metric
+                      valid_split=0.2, # use 20% of the training data for the validation set
+                      save_model=None, # checkpoint the best model
+                      save_results=True, # save the results as .json (in addition to mongoDB)
+                      save_dir="/data/nasif12/home_if12/matusevi/new_test/autoCorrect/saved_models/")  # p
+                                      save_dir="./saved_models/")  # p
 #        return objective
 
     hyper_params = {
@@ -52,10 +55,15 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
         }
     }
 
-test_fn(objective, hyper_params)
+test_fn(objective, hyper_params, save_model=None)
 
-#trials = Trials()
-#best = fmin(objective, hyper_params, trials=trials, algo=tpe.suggest, max_evals=2)
+trials = Trials()
+best = fmin(objective,
+            hyper_params,
+            trials=trials,
+            algo=tpe.suggest,
+            max_evals=3,
+            catch_eval_exceptions=True)
 #trials = KMongoTrials(db_name, exp_name,
 #                      ip="localhost",
 #	                  port=22334)
