@@ -29,7 +29,7 @@ class AECorrector(Corrector):
             self.epochs = metrics['epochs'] #metrics['param']['fit']['epochs']
             self.encoding_dim = metrics['m_emb'] #metrics['param']['model']['encoding_dim']
             self.lr = metrics['m_lr'] #metrics['param']['model']['lr']
-        else
+        else:
             self.denoisingAE = denoisingAE
             self.inject_zeros = inject_zeros
             self.epochs = epochs

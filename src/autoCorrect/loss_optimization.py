@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from .data_utils import DataLoaderWithPred, DataLoader, DataReader
 from .autoencoder import Autoencoder
@@ -64,6 +65,10 @@ best = fmin(objective,
             algo=tpe.suggest,
             max_evals=3,
             catch_eval_exceptions=True)
+
+#output_file=
+with open(output_file, 'wt') as f:
+        json.dump(best, f)
 #trials = KMongoTrials(db_name, exp_name,
 #                      ip="localhost",
 #	                  port=22334)

@@ -1,6 +1,7 @@
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix
+from statsmodels.stats.multitest import fdrcorrection
 import matplotlib.pyplot as plt
 plt.style.use("ggplot")
 import numpy as np
@@ -678,6 +679,72 @@ class DataCookerWithPred(DataCooker):
         
         return (x_train, y_train),(x_valid, y_valid), (x_test, ) #y_test
 
+    
+class DataCookerWithOutlierIdx(DataCooker):
+    def __init__(self, counts, size_factors=None,
+                 inject_outliers=True):
+        super().__init__(counts, size_factors,
+                 inject_outliers)
+
+    def prepare_idx(self):
+        self.idx_data = TrainTestPreparation(data=self.out_idx,
+                                                no_rescaling=True)
+        
+    def data(self, inject_zeros=True):
+        self.inject_zeros = inject_zeros
+        self.injected_outliers = self.inject_outliers(self.counts)
+        self.train1_counts = self.injected_outliers.outlier_data.data_with_outliers.astype(int)
+        self.out_idx = self.injected_outliers.outlier_data.index
+        self.prepare_data()
+        self.prepare_idx()
+        x_train = {'inp': self.train1_data.splited_data.train,
+                    'sf': self.train1_data.splited_data.size_factor_train}                
+        y_train = self.train2_data.splited_data.train
+        
+        x_valid = {'inp': self.train1_data.splited_data.test,
+                    'sf': self.train1_data.splited_data.size_factor_test}        
+        y_valid = np.stack([self.train2_data.splited_data.test.flatten(),
+                            self.idx_data.splited_data.test.flatten()]) 
+        
+        return (x_train, y_train),(x_valid, y_valid)
+
+    
+class OutlierRecall():
+    def __init__(self, theta, threshold):
+        self.theta = theta
+        self.threshold = threshold
+        
+    def __call__(self, y_true, pred_mean):
+        counts = y_true[0]
+        idx = y_true[1]
+        outlier_table = self.get_outlier_table(counts, pred_mean.flatten(), idx)
+        recall = self.get_recall(outlier_table)
+        return recall
+        
+    def get_outlier_table(self, counts, mu, idx):
+        p_vals = []
+        theta = np.empty_like(counts)
+        theta.fill(self.theta)
+        for x_ij,disp_ij,mu_ij in zip(counts, theta, mu):
+            cdf_val = sp.stats.nbinom.cdf(k=x_ij, n=disp_ij,
+                                          p=disp_ij/(mu_ij+disp_ij) )
+            pmf_at_x_ij = sp.stats.nbinom.pmf(k=x_ij, n=disp_ij,
+                                              p=disp_ij/(mu_ij+disp_ij) )
+            p_val = min(cdf_val, 1-cdf_val+pmf_at_x_ij, 0.5)*2
+            p_vals.append(p_val)
+        p_vals = np.asarray(p_vals)
+        p_vals_fdr = fdrcorrection(p_vals, alpha=0.1)
+        idx = idx.flatten()
+        table_x = np.concatenate((p_vals_fdr[1].reshape(p_vals_fdr[1].shape[0],1),
+                          p_vals_fdr[0].reshape(p_vals_fdr[0].shape[0],1)), axis=1)
+        table = np.concatenate((table_x, idx.reshape(idx.shape[0],1)), axis=1)
+        return table # pvals, pred (significance), true (idx) 
+    
+    def get_recall(self, outlier_table):
+        tn, fp, fn, tp = confusion_matrix(outlier_table[:self.threshold,2], outlier_table[:self.threshold,1]).ravel()
+        recall = tp / (tp + fp)
+        return recall
+        
     
 class EvaluationOfOutInjection():
     def __init__(self, out_data, out_idx, orig_data=None,
