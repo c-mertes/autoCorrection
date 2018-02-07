@@ -304,26 +304,44 @@ class ZeroInjectionFixed(OutlierInjection):
     
 class ZeroInjectionWhereMean(OutlierInjection):
     def __init__(self, input_data, from_fc=1, min_gene_mean=1000,
-                 sample_names=None, nr_of_out = 800,
+                 sample_names=None, frac_of_out = 10.0**-4,
                  gene_names=None, counts_file = "out_file"):
         self.input_data=input_data
         self.log2fc = self.computeLog2foldChange()
         self.from_fc=from_fc
-        self.nr_of_out = nr_of_out 
+        self.frac_of_out = frac_of_out 
         self.min_gene_mean = min_gene_mean
+        self.ind_high_mean_and_fc = self.get_high_mean_and_fc_idx()
         self.outlier_data = self.get_outlier_data()
         self.sample_names = sample_names
         self.gene_names = gene_names
         self.counts_file = counts_file
+        
+    def get_high_mean_and_fc_idx(self):
+        self.high_fc = np.where((self.log2fc>self.from_fc))
+        high_mean = np.where(np.mean(self.input_data, axis=0)>self.min_gene_mean)
+        ind_high_mean_and_fc = np.nonzero(np.in1d(self.high_fc[1], high_mean[0]))[0]
+        #if ind_high_mean_and_fc.size == 0: Except("Set lower from_fc, or lower min_gene_mean")
+        return ind_high_mean_and_fc
+    
+    def get_nr_of_outliers(self):
+        nr = round(self.input_data.shape[0]*self.input_data.shape[1]*self.frac_of_out)
+        return nr
+    
+    def set_nr_of_outliers(self):
+        nr = self.get_nr_of_outliers()
+        if self.ind_high_mean_and_fc.size > nr:
+            nr_of_out = nr
+        else:
+            nr_of_out = self.ind_high_mean_and_fc.size
+        return nr_of_out
             
     def get_outlier_data(self):
-        high_fc = np.where((self.log2fc>self.from_fc))
-        high_mean = np.where(np.mean(self.input_data, axis=0)>self.min_gene_mean)
-        ind_high_mean_and_fc = np.nonzero(np.in1d(high_fc[1], high_mean[0]))[0]
-        ind_high_mean_and_fc = np.random.choice(ind_high_mean_and_fc,
+        self.nr_of_out = self.set_nr_of_outliers()
+        ind_high_mean_and_fc = np.random.choice(self.ind_high_mean_and_fc,
                                                 self.nr_of_out, replace=False)
-        i=high_fc[0][ind_high_mean_and_fc]
-        j=high_fc[1][ind_high_mean_and_fc]
+        i=self.high_fc[0][ind_high_mean_and_fc]
+        j=self.high_fc[1][ind_high_mean_and_fc]
         idx =np.zeros((self.input_data.shape[0],
                        self.input_data.shape[1]))
         idx[(i,j)] = 1
@@ -332,7 +350,7 @@ class ZeroInjectionWhereMean(OutlierInjection):
         return OutlierData(idx, injected)
 
     
-class FoldChInjectionWhereMean(OutlierInjection):
+class FoldChInjectionWhereMean(OutlierInjection): # <----change to fraction
     def __init__(self, input_data, fc_treshold=1, gene_mean_treshold=1000,
                  sample_names=None, nr_of_out = 800, fold=-5, use_large_out_val=False,
                  gene_names=None, counts_file = "out_file", use_log2fc_out=True):
@@ -605,10 +623,10 @@ class DataCooker():
     def inject_outliers(self, data):
         if self.inject_zeros:
             injected_outliers = ZeroInjectionWhereMean(
-                data, nr_of_out=800)
+                data)
         else:
             injected_outliers = FoldChInjectionWhereMean(
-                data, fold=-5, nr_of_out=800)
+                data, fold=-5)
         return injected_outliers
                 
     def prepare_data(self):
@@ -637,7 +655,7 @@ class DataCooker():
         return (x_train, y_train),(x_valid, y_valid),
 
     
-class DataCookerWithPred(DataCooker):
+class DataCookerTrainValidTest(DataCooker):
     def __init__(self, counts, size_factors=None,
                  inject_outliers=False,
                  pred_counts=None, pred_sf=None):
@@ -653,34 +671,39 @@ class DataCookerWithPred(DataCooker):
             self.pred_counts = counts.astype(int)
             self.pred_sf = self.size_factors
             
-    def prepare_pred(self):
-        self.pred_data = TrainTestPreparation(data=self.pred_counts,
+    def prepare_test(self):
+        self.test_data = TrainTestPreparation(data=self.test_counts,
                                       sf=self.size_factors,
                                       no_rescaling=False,
                                       no_splitting=True)
     
-    def data(self, inject_outliers=False, inject_zeros=True):
+    def data(self, inject_outliers=True, inject_zeros=True):
         if inject_outliers:
             self.inject_zeros = inject_zeros
             self.injected_outliers = self.inject_outliers(self.counts)
             self.train1_counts = self.injected_outliers.outlier_data.data_with_outliers.astype(int)
+            self.injected_out_pred = self.inject_outliers(self.pred_counts)
+            self.test_counts = self.injected_out_pred.outlier_data.data_with_outliers.astype(int)
+            self.test_data_idx = self.injected_out_pred.outlier_data.index
         else:
             self.train1_counts = self.counts.astype(int)
+            self.test_counts = self.pred_counts
         self.prepare_data()
-        self.prepare_pred()
+        self.prepare_test()
         x_train = {'inp': self.train1_data.splited_data.train,
                     'sf': self.train1_data.splited_data.size_factor_train}                
         y_train = self.train2_data.splited_data.train        
         x_valid = {'inp': self.train1_data.splited_data.test,
                     'sf': self.train1_data.splited_data.size_factor_test}        
         y_valid = self.train2_data.splited_data.test
-        x_test = {'inp': self.pred_data.processed_data.data, 
-                    'sf': self.pred_data.processed_data.size_factor}
-        
-        return (x_train, y_train),(x_valid, y_valid), (x_test, ) #y_test
+        x_test = {'inp': self.test_data.processed_data.data, 
+                    'sf': self.test_data.processed_data.size_factor}
+        y_test = np.stack([self.test_data.processed_data.data,
+                            self.test_data_idx])        
+        return (x_train, y_train),(x_valid, y_valid), (x_test, y_test) 
 
     
-class DataCookerWithOutlierIdx(DataCooker):
+class DataCookerTrainTest(DataCooker):
     def __init__(self, counts, size_factors=None,
                  inject_outliers=True):
         super().__init__(counts, size_factors,
@@ -701,50 +724,13 @@ class DataCookerWithOutlierIdx(DataCooker):
                     'sf': self.train1_data.splited_data.size_factor_train}                
         y_train = self.train2_data.splited_data.train
         
-        x_valid = {'inp': self.train1_data.splited_data.test,
+        x_test = {'inp': self.train1_data.splited_data.test,
                     'sf': self.train1_data.splited_data.size_factor_test}        
-        y_valid = np.stack([self.train2_data.splited_data.test.flatten(),
-                            self.idx_data.splited_data.test.flatten()]) 
+        y_test = np.stack([self.train2_data.splited_data.test,
+                            self.idx_data.splited_data.test]) 
         
-        return (x_train, y_train),(x_valid, y_valid)
+        return (x_train, y_train),(x_test, y_test)
 
-    
-class OutlierRecall():
-    def __init__(self, theta, threshold):
-        self.theta = theta
-        self.threshold = threshold
-        
-    def __call__(self, y_true, pred_mean):
-        counts = y_true[0]
-        idx = y_true[1]
-        outlier_table = self.get_outlier_table(counts, pred_mean.flatten(), idx)
-        recall = self.get_recall(outlier_table)
-        return recall
-        
-    def get_outlier_table(self, counts, mu, idx):
-        p_vals = []
-        theta = np.empty_like(counts)
-        theta.fill(self.theta)
-        for x_ij,disp_ij,mu_ij in zip(counts, theta, mu):
-            cdf_val = sp.stats.nbinom.cdf(k=x_ij, n=disp_ij,
-                                          p=disp_ij/(mu_ij+disp_ij) )
-            pmf_at_x_ij = sp.stats.nbinom.pmf(k=x_ij, n=disp_ij,
-                                              p=disp_ij/(mu_ij+disp_ij) )
-            p_val = min(cdf_val, 1-cdf_val+pmf_at_x_ij, 0.5)*2
-            p_vals.append(p_val)
-        p_vals = np.asarray(p_vals)
-        p_vals_fdr = fdrcorrection(p_vals, alpha=0.1)
-        idx = idx.flatten()
-        table_x = np.concatenate((p_vals_fdr[1].reshape(p_vals_fdr[1].shape[0],1),
-                          p_vals_fdr[0].reshape(p_vals_fdr[0].shape[0],1)), axis=1)
-        table = np.concatenate((table_x, idx.reshape(idx.shape[0],1)), axis=1)
-        return table # pvals, pred (significance), true (idx) 
-    
-    def get_recall(self, outlier_table):
-        tn, fp, fn, tp = confusion_matrix(outlier_table[:self.threshold,2], outlier_table[:self.threshold,1]).ravel()
-        recall = tp / (tp + fp)
-        return recall
-        
     
 class EvaluationOfOutInjection():
     def __init__(self, out_data, out_idx, orig_data=None,

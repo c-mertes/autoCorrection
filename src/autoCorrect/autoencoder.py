@@ -21,8 +21,8 @@ class Autoencoder():
                  sf_test=None, train_out=None, test_out=None,
                  predict_data=None, sf_predict=None, means_data=None, 
                  encoding_dim=2, size=10000, optimizer=Adam(lr=0.001),
-                 choose_autoencoder=False,
-                 choose_encoder=False, choose_decoder=False, epochs=1100):
+                 choose_autoencoder=False, choose_encoder=False,
+                 choose_decoder=False, epochs=1100, batch_size=None):
         self.train_in = train_in
         self.sf_train = sf_train
         self.test_in = test_in
@@ -36,6 +36,7 @@ class Autoencoder():
         self.encoding_dim = encoding_dim
         self.size = size
         self.epochs = epochs
+        self.batch_size = batch_size
         self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e5)
         self.Invert = lambda x: K.pow(x, -1) 
         self.choose_autoencoder = choose_autoencoder
@@ -65,7 +66,7 @@ class Autoencoder():
             self.encoding_dim = encoding_dim
         self.input_layer = Input(shape=(self.size,), name='inp')
         self.sf_layer = Input(shape=(self.size,), name='sf')
-        self.normalized = Multiply()([self.input_layer, self.sf_layer])
+        self.normalized = Multiply()([self.input_layer, self.sf_layer]) #size factor layer contains inversed sf see : data_utils.py line 490
         encoded = Dense(self.encoding_dim, name='encoder', use_bias=True)(self.normalized)
         decoded = Dense(self.size, name='decoder', use_bias=True)(encoded)
         mean_scaled = Lambda(self.ClippedExp, output_shape=(self.size,), name="mean_scaled")(decoded)
@@ -130,7 +131,7 @@ class Autoencoder():
         with self.sess.as_default():
             self.history = self.model.fit({'inp':self.train_in, 'sf':self.sf_train}, self.train_out,  # x_train_log1p, x_train,
                                           epochs=self.epochs,
-                                          batch_size=None,
+                                          batch_size=self.batch_size,
                                           shuffle=True,
                                           validation_data=({'inp':self.test_in,'sf':self.sf_test}, self.test_out), #callbacks=[self.plot_losses,],# stoping],
                                           verbose=0
