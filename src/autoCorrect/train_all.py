@@ -23,7 +23,7 @@ from autoCorrect import autoencoder
 def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
 
-DIR_ROOT = os.path.expanduser("~/new_test/autoCorrect/src/autoCorrect")
+DIR_ROOT = os.path.expanduser("~/new_test/autoCorrect")
 DIR_OUT_TRIALS = DIR_ROOT + "/trials/"
 DIR_OUT_RESULTS = DIR_ROOT + "/saved_models/best/"
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     run_test = not args.notest
     
     # --------------------------------------------
-    exp_name = "out_recall_rmsprop_no_stop"
+    exp_name = "out_loss_Adam_no_stop_inj_OutInjectionFC_merged_b_g"
     print_exp(exp_name)
     # -----
     fn = CompileFN(DB_NAME, exp_name,
@@ -82,8 +82,8 @@ if __name__ == "__main__":
                    model_fn=model.model,
                    add_eval_metrics={"outlier_loss":OutlierLoss()},
                    #add_eval_metrics={"outlier_recall":OutlierRecall(theta=25, threshold=1000)},
-                   loss_metric="outlier_recall", # which metric to optimize for
-                   loss_metric_mode="max",  # try to maximize the metric
+                   loss_metric="outlier_loss", # which metric to optimize for
+                   loss_metric_mode="min",  # try to maximize the metric
                    valid_split=None, # use 20% of the training data for the validation set
                    save_model=None, # checkpoint the best model
                    save_results=True, # save the results as .json (in addition to mongoDB)
@@ -94,10 +94,10 @@ if __name__ == "__main__":
         },
         "model": {
             "lr": hp.loguniform("m_lr", np.log(1e-4), np.log(1e-3)), # 0.0001 - 0.001
-            "encoding_dim": hp.choice("m_emb", (5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 24, 30)), ##
+            "encoding_dim": hp.choice("m_emb", (18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)), ##
         },
         "fit": {
-            "epochs": hp.choice("epochs", (100, 150, 200, 400, 500, 700, 900, 1100)), #
+            "epochs": hp.choice("epochs", (100, 150, 200, 250, 300, 400, 500, 600, 700, 900, 1100)), #
             "batch_size": hp.choice("batch_size", (None, 32, 50, 100, 128, 200))
         }
     }

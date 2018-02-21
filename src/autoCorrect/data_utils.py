@@ -781,18 +781,25 @@ class DataReader():
         self.data = self.read_data(path, sep=" ")
         return self.data
     
+    def read_gtex_kremer_merged(self):
+        path="/data/ouga/home/ag_gagneur/matusevi/scared-analysis-autoCorrect/scared-analysis-autoCorrect/Data/gtex_bader_merged.tsv"
+        self.data = self.read_data(path, sep=" ")
+        return self.data
+    
     def read_data(self, path, sep):
         data_pd = pd.read_csv(path, index_col=0,header=0, sep=sep)
         data = np.transpose(np.array(data_pd.values))
         return data
     
-    
 class DataCooker():
     def __init__(self, counts, size_factors=None,
-                 inject_outliers=True, inj_method="OutInjectionZscoreFC",
+                 inject_outliers=True, inject_on_pred=False,
+                 only_prediction=False, inj_method="OutInjectionFC",
                  pred_counts=None, pred_sf=None):
         self.counts=counts
         self.inject_outliers=inject_outliers
+        self.inject_outliers_on_pred = inject_on_pred
+        self.only_prediction = only_prediction
         self.inj_method = inj_method
         if size_factors is not None:
             self.sf = size_factors
@@ -859,14 +866,15 @@ class DataCooker():
         pred_noisy = self.inject(pred_count_data.processed_data.data)
         return pred_noisy
                            
-    def data(self, inj_method="OutInjectionZscoreFC"):
+    def data(self, inj_method="OutInjectionFC"):
         self.inj_method=inj_method
         count_data = self.get_count_data(self.counts,self.sf)
-        pred_count_data = deepcopy(count_data)
-        #rescaled = self.prepare_rescaled(count_data, self.sf)
-        simple_train_test = self.prepare_simple(count_data)
-        noisy_train_test = self.prepare_noisy(count_data) 
-        if self.inject_outliers:
+        if not self.only_prediction: # <----------------------------- change
+            pred_count_data = deepcopy(count_data)
+            #rescaled = self.prepare_rescaled(count_data, self.sf)
+            simple_train_test = self.prepare_simple(count_data)
+            noisy_train_test = self.prepare_noisy(count_data) 
+        if self.inject_outliers_on_pred:
             if not np.array_equal(self.counts,self.pred_counts):
                 pred_count_data = self.get_count_data(self.pred_counts,self.pred_sf)
             pred_noisy = self.prepare_pred(pred_count_data)
@@ -874,19 +882,38 @@ class DataCooker():
                                 'sf': pred_count_data.processed_data.size_factor}
             y_true_idx_test = np.stack([self.pred_counts.astype(int), pred_noisy.outlier_data.index])
         else:
-            x_2nd_noise_test = None
+            print("Preparing data!")
+            x_2nd_noise_test = {'inp': count_data.processed_data.data, 
+                                'sf': count_data.processed_data.size_factor}
             y_true_idx_test = None
-            
-        x_noisy_train = {'inp': noisy_train_test.splited_data.train,
-                         'sf': noisy_train_test.splited_data.size_factor_train}                
-        x_train = simple_train_test.splited_data.train        
-        x_noisy_valid = {'inp': noisy_train_test.splited_data.test,
-                         'sf': noisy_train_test.splited_data.size_factor_test}        
-        x_valid = simple_train_test.splited_data.test
+        
+        if not self.only_prediction: # <----------------------------- change
+            x_noisy_train = {'inp': noisy_train_test.splited_data.train,
+                             'sf': noisy_train_test.splited_data.size_factor_train}                
+            x_train = simple_train_test.splited_data.train        
+            x_noisy_valid = {'inp': noisy_train_test.splited_data.test,
+                             'sf': noisy_train_test.splited_data.size_factor_test}        
+            x_valid = simple_train_test.splited_data.test
+        if self.only_prediction: # <----------------------------- change
+            cooked_data = (None, None),(None, None), (x_2nd_noise_test, None)
+        else:
+            cooked_data = (x_noisy_train, x_train),(x_noisy_valid, x_valid), (x_2nd_noise_test, y_true_idx_test)
    
-        return (x_noisy_train, x_train),(x_noisy_valid, x_valid),(x_2nd_noise_test, y_true_idx_test)
+        return cooked_data
 
-
+#class DataCookerOnlyPrediction(DataCooker):
+#    def __init__(self, counts, size_factors=None,
+#                 inject_outliers=True, inject_on_pred=False,
+#                 inj_method="OutInjectionFC",
+#                 pred_counts=None, pred_sf=None):
+#        super.__init__(counts, size_factors,
+#                 inject_outliers, inject_on_pred,
+#                 inj_method, pred_counts, pred_sf)
+        
+#    def data(self, inj_method="OutInjectionFC"):
+#        self.inj_method=inj_method
+        
+        
 class EvaluationOfOutInjection():
     def __init__(self, out_data, out_idx, orig_data=None,
                  q="None", out_fc="None", data_origin=" ", 
