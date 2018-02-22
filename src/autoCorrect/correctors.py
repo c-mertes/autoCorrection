@@ -23,8 +23,9 @@ class DummyCorrector(Corrector):
 
 
 class AECorrector(Corrector):
-    def __init__(self, param_path=None, denoisingAE=True,
-                 save_model=True, model_name="model", model_directory="/s/project/scared/model",
+    def __init__(self, model_name="model", model_directory="/s/project/scared/model",
+                 param_path=None, denoisingAE=True,
+                 save_model=True, 
                  inject_zeros=True, epochs=250, encoding_dim=24, lr=0.00068, batch_size=None):
         if param_path is not None:
             metrics = json.load(open(param_path))
