@@ -24,7 +24,7 @@ class DummyCorrector(Corrector):
 
 class AECorrector(Corrector):
     def __init__(self, param_path=None, denoisingAE=True,
-                 save_model=True, model_directory="/s/project/scared/model",
+                 save_model=True, model_name="model", model_directory="/s/project/scared/model",
                  inject_zeros=True, epochs=250, encoding_dim=24, lr=0.00068, batch_size=None):
         if param_path is not None:
             metrics = json.load(open(param_path))
@@ -41,6 +41,7 @@ class AECorrector(Corrector):
             self.lr = lr
             self.batch_size = batch_size
             self.save_model = save_model
+            self.model_name = model_name
             self.directory = model_directory
 
     def correct(self, counts, size_factors, only_predict=False):
@@ -65,18 +66,18 @@ class AECorrector(Corrector):
                                )
             if self.save_model:
                 model_json = self.ae.model.to_json()
-                with open(self.directory+"/model.json", "w") as json_file: # <------what directory?
+                with open(self.directory'/'+self.model_name+'.json', "w") as json_file: # <------what directory?
                     json_file.write(model_json)
-                self.ae.model.save_weights(self.directory+"/weights.h5")
+                self.ae.model.save_weights(self.directory+'/'+self.model_name+'_weights.h5')
                 print("Model saved on disk!")
             model = self.ae.model
         else:
-            json_file = open(self.directory+'/model.json', 'r') # <------what directory?
+            json_file = open(self.directory+'/'+self.model_name+'.json', 'r') # <------what directory?
             loaded_model_json = json_file.read()
             json_file.close()
             model = model_from_json(loaded_model_json,
                                             custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
-            model.load_weights(self.directory+"/weights.h5")
+            model.load_weights(self.directory+'/'+self.model_name+'_weights.h5')
             print("Model loaded from disk!")
         self.corrected = model.predict(self.data[2][0])
         return self.corrected
