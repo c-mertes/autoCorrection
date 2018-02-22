@@ -66,7 +66,7 @@ class AECorrector(Corrector):
                                )
             if self.save_model:
                 model_json = self.ae.model.to_json()
-                with open(self.directory'/'+self.model_name+'.json', "w") as json_file: # <------what directory?
+                with open(self.directory+'/'+self.model_name+'.json', "w") as json_file: # <------what directory?
                     json_file.write(model_json)
                 self.ae.model.save_weights(self.directory+'/'+self.model_name+'_weights.h5')
                 print("Model saved on disk!")
