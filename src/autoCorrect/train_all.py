@@ -74,7 +74,7 @@ if __name__ == "__main__":
     run_test = not args.notest
     
     # --------------------------------------------
-    exp_name = "out_loss_Adam_no_stop_inj_OutInjectionFC_merged_b_g"
+    exp_name = "exp1"
     print_exp(exp_name)
     # -----
     fn = CompileFN(DB_NAME, exp_name,
