@@ -71,10 +71,9 @@ Installation
     git clone [this repo]
     
     cd autocorrect
+    make install
     
-    python setup.py sdist
-    
-    pip install -e .
+    #later will be available:
     #pip install autcorrect
 
 
