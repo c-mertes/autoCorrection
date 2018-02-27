@@ -1,6 +1,7 @@
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix
+from statsmodels.stats.multitest import fdrcorrection
 import matplotlib.pyplot as plt
 plt.style.use("ggplot")
 import numpy as np
@@ -24,6 +25,7 @@ from collections import OrderedDict
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 from ggplot import *
+from copy import deepcopy
 
 
 class Simulation():
@@ -146,13 +148,7 @@ class OutlierInjection():
         self.gene_names = gene_names 
         
     def computeLog2foldChange(self):
-        log2fc = np.zeros_like(self.input_data, dtype=np.float)
-        for i in range(0,self.input_data.shape[0]):
-            for j in range(0,self.input_data.shape[1]):
-                if self.input_data[i][j] == 0:
-                    log2fc[i][j] = np.log2((self.input_data[i][j]+1)/np.mean(self.input_data[:,j]))
-                else:
-                    log2fc[i][j] = np.log2(self.input_data[i][j]/np.mean(self.input_data[:,j]))
+        log2fc = np.log2((0.00001 + self.input_data)/(0.00001 + np.mean(self.input_data, axis=0)))
         return log2fc
     
     def set_fold(self):
@@ -248,6 +244,179 @@ class OutInjection(OutlierInjection):
         idx = idx.reshape(self.input_data.shape[0],self.input_data.shape[1])
         return OutlierData(idx, injected)
 
+
+class OutInjectionZscoreFC(OutlierInjection):
+    def __init__(self, input_data, outlier_prob=10.0**-3,
+                 use_z_score=True, z=4, fold=None, inj_lower_expr=False,
+                 sample_names=None, gene_names=None, counts_file = "out_file"):
+        
+        self.input_data=input_data
+        self.outlier_prob=outlier_prob
+        if use_z_score:
+            self.z = self.set_score()
+            self.log2fc = self.computeLog2foldChange()
+            self.fold = self.set_fold_z()
+        else:
+            if fold is None:
+                self.fold = self.set_score()
+            else:
+                self.fold = np.full((1, input_data.shape[1]), fold, dtype=int)
+        self.outlier_data = self.get_outlier_data()
+        self.sample_names = sample_names
+        self.gene_names = gene_names
+        self.counts_file = counts_file
+        print("doing!")
+            
+    def set_fold_z(self):
+        fold = self.z * np.std(self.log2fc, axis=0) + np.mean(self.log2fc, axis=0)
+        return fold
+    
+    def set_score(self):
+        score = np.random.choice((3,4,5), self.input_data.shape[1])
+        return score
+            
+    def get_outlier_data(self):
+        injected = np.copy(self.input_data)
+        data = self.input_data.flatten()
+        idx=np.random.choice((-1,1,0), size=(np.multiply(self.input_data.shape[0],
+                                                         self.input_data.shape[1])),
+                             p=(self.outlier_prob/2, self.outlier_prob/2, 1-self.outlier_prob))
+        places = np.array(range(0, data.shape[0]))
+        for entry, indicator, place in zip(data, idx, places):
+            if indicator == -1:
+                i = np.unravel_index(place, self.input_data.shape)[0]
+                j = np.unravel_index(place, self.input_data.shape)[1]
+                if self.fold[j] > 0: self.fold[j] = indicator * self.fold[j]
+                out_count = round(np.mean(self.input_data[:,j])*(2.0**self.fold[j]))
+                injected[i][j] = out_count
+            elif indicator == 1:
+                i = np.unravel_index(place, self.input_data.shape)[0]
+                j = np.unravel_index(place, self.input_data.shape)[1]
+                if self.fold[j] < 0: self.fold[j] = abs(self.fold[j])
+                out_count = round(np.mean(self.input_data[:,j])*(2.0**self.fold[j]))
+                if out_count > 200000: #100*np.max(self.input_data):
+                    injected[i][j] = 200000
+                else:
+                    injected[i][j] = out_count
+        idx = idx.reshape(self.input_data.shape[0],self.input_data.shape[1])
+        return OutlierData(idx, injected)
+
+    
+class OutInjectionFC(OutlierInjection):
+    def __init__(self, input_data, outlier_prob=10.0**-3,
+                 fold=None, sample_names=None, gene_names=None,
+                 counts_file = "out_file"):
+        
+        self.input_data=input_data
+        self.outlier_prob=outlier_prob
+        if fold is None:
+            self.log2fc = self.computeLog2foldChange()
+            self.fold = self.set_fold()
+        else:
+            self.fold = np.full((input_data.shape[1]), fold, dtype=int)
+        self.outlier_data = self.get_outlier_data()
+        self.sample_names = sample_names
+        self.gene_names = gene_names
+        self.counts_file = counts_file
+        print("Injecting!")
+            
+    def set_fold(self):
+        fc_mins = np.trunc(np.min(self.log2fc, axis=0))
+        fc_maxs = np.trunc(np.max(self.log2fc, axis=0))
+        fold = np.stack([fc_mins, fc_maxs])        
+        return fold
+            
+    def get_outlier_data(self):
+        injected = np.copy(self.input_data)
+        data = self.input_data.flatten()
+        idx=np.random.choice((1,0), size=(np.multiply(self.input_data.shape[0], 
+                                                      self.input_data.shape[1])),
+                                                      p=(self.outlier_prob,
+                                                      1-self.outlier_prob))
+        places = np.array(range(0, data.shape[0]))
+        for entry, indicator, place in zip(data, idx, places):
+            if indicator == 1:
+                i = np.unravel_index(place, self.input_data.shape)[0]
+                j = np.unravel_index(place, self.input_data.shape)[1]
+                if self.log2fc[i][j] >= 0:
+                    fold = self.fold[0][j]-1
+                else:
+                    fold = self.fold[1][j]+1
+                out_count = round(np.mean(self.input_data[:,j])*(2.0**fold))
+                if out_count > 200000: #100*np.max(self.input_data):
+                    injected[i][j] = 200000
+                else:
+                    injected[i][j] = out_count
+        idx = idx.reshape(self.input_data.shape[0],self.input_data.shape[1])
+        return OutlierData(idx, injected)
+
+    
+class OutInjectionFCfixed(OutlierInjection):
+    def __init__(self, input_data, outlier_prob=10.0**-3,
+                 fold=None, sample_names=None, gene_names=None,
+                 counts_file = "out_file"):
+        
+        self.input_data=input_data
+        self.outlier_prob=outlier_prob
+        self.log2fc = self.computeLog2foldChange()
+        self.outlier_data = self.get_outlier_data()
+        self.sample_names = sample_names
+        self.gene_names = gene_names
+        self.counts_file = counts_file
+        print("Injecting!")
+
+    def get_outlier_data(self):
+        injected = np.copy(self.input_data)
+        data = self.input_data.flatten()
+        idx=np.random.choice((1,0), size=(np.multiply(self.input_data.shape[0], 
+                                                      self.input_data.shape[1])),
+                                                      p=(self.outlier_prob,
+                                                      1-self.outlier_prob))
+        places = np.array(range(0, data.shape[0]))
+        for entry, indicator, place in zip(data, idx, places):
+            if indicator == 1:
+                i = np.unravel_index(place, self.input_data.shape)[0]
+                j = np.unravel_index(place, self.input_data.shape)[1]
+                if self.log2fc[i][j] >= 0:
+                    out_count = 0
+                else:
+                    out_count = 200000
+                injected[i][j] = out_count
+        idx = idx.reshape(self.input_data.shape[0],self.input_data.shape[1])
+        return OutlierData(idx, injected)
+
+    
+class OutInjectionFCzero(OutlierInjection):
+    def __init__(self, input_data, outlier_prob=10.0**-3,
+                 fold=None, sample_names=None, gene_names=None,
+                 counts_file = "out_file"):
+        
+        self.input_data=input_data
+        self.outlier_prob=outlier_prob
+        self.log2fc = self.computeLog2foldChange()
+        self.outlier_data = self.get_outlier_data()
+        self.sample_names = sample_names
+        self.gene_names = gene_names
+        self.counts_file = counts_file
+        print("injecting zeros!")
+
+    def get_outlier_data(self):
+        injected = np.copy(self.input_data)
+        data = self.input_data.flatten()
+        idx=np.random.choice((1,0), size=(np.multiply(self.input_data.shape[0], 
+                                                      self.input_data.shape[1])),
+                                                      p=(self.outlier_prob,
+                                                      1-self.outlier_prob))
+        places = np.array(range(0, data.shape[0]))
+        for entry, indicator, place in zip(data, idx, places):
+            if indicator == 1:
+                i = np.unravel_index(place, self.input_data.shape)[0]
+                j = np.unravel_index(place, self.input_data.shape)[1]
+                if self.log2fc[i][j] >= 0:
+                    injected[i][j] = 0
+        idx = idx.reshape(self.input_data.shape[0],self.input_data.shape[1])
+        return OutlierData(idx, injected)
+
     
 class ZeroInjection(OutlierInjection):
     def __init__(self, input_data, outlier_prob=10.0**-4,
@@ -255,7 +424,6 @@ class ZeroInjection(OutlierInjection):
         
         self.input_data=input_data
         self.outlier_prob=outlier_prob
-        self.log2fc = self.computeLog2foldChange()
         self.outlier_data = self.get_outlier_data()
         self.sample_names = sample_names
         self.gene_names = gene_names
@@ -301,28 +469,47 @@ class ZeroInjectionFixed(OutlierInjection):
         injected[id_for_idx] = 0
         return OutlierData(idx, injected)
     
+    
 class ZeroInjectionWhereMean(OutlierInjection):
     def __init__(self, input_data, from_fc=1, min_gene_mean=1000,
-                 sample_names=None, nr_of_out = 800,
+                 sample_names=None, frac_of_out = 10.0**-4,
                  gene_names=None, counts_file = "out_file"):
         self.input_data=input_data
         self.log2fc = self.computeLog2foldChange()
         self.from_fc=from_fc
-        self.nr_of_out = nr_of_out 
+        self.frac_of_out = frac_of_out 
         self.min_gene_mean = min_gene_mean
+        self.ind_high_mean_and_fc = self.get_high_mean_and_fc_idx()
         self.outlier_data = self.get_outlier_data()
         self.sample_names = sample_names
         self.gene_names = gene_names
         self.counts_file = counts_file
+        
+    def get_high_mean_and_fc_idx(self):
+        self.high_fc = np.where((self.log2fc>self.from_fc))
+        high_mean = np.where(np.mean(self.input_data, axis=0)>self.min_gene_mean)
+        ind_high_mean_and_fc = np.nonzero(np.in1d(self.high_fc[1], high_mean[0]))[0]
+        #if ind_high_mean_and_fc.size == 0: Except("Set lower from_fc, or lower min_gene_mean")
+        return ind_high_mean_and_fc
+    
+    def get_nr_of_outliers(self):
+        nr = round(self.input_data.shape[0]*self.input_data.shape[1]*self.frac_of_out)
+        return nr
+    
+    def set_nr_of_outliers(self):
+        nr = self.get_nr_of_outliers()
+        if self.ind_high_mean_and_fc.size > nr:
+            nr_of_out = nr
+        else:
+            nr_of_out = self.ind_high_mean_and_fc.size
+        return nr_of_out
             
     def get_outlier_data(self):
-        high_fc = np.where((self.log2fc>self.from_fc))
-        high_mean = np.where(np.mean(self.input_data, axis=0)>self.min_gene_mean)
-        ind_high_mean_and_fc = np.nonzero(np.in1d(high_fc[1], high_mean[0]))[0]
-        ind_high_mean_and_fc = np.random.choice(ind_high_mean_and_fc,
+        self.nr_of_out = self.set_nr_of_outliers()
+        ind_high_mean_and_fc = np.random.choice(self.ind_high_mean_and_fc,
                                                 self.nr_of_out, replace=False)
-        i=high_fc[0][ind_high_mean_and_fc]
-        j=high_fc[1][ind_high_mean_and_fc]
+        i=self.high_fc[0][ind_high_mean_and_fc]
+        j=self.high_fc[1][ind_high_mean_and_fc]
         idx =np.zeros((self.input_data.shape[0],
                        self.input_data.shape[1]))
         idx[(i,j)] = 1
@@ -331,7 +518,7 @@ class ZeroInjectionWhereMean(OutlierInjection):
         return OutlierData(idx, injected)
 
     
-class FoldChInjectionWhereMean(OutlierInjection):
+class FoldChInjectionWhereMean(OutlierInjection): # <----change to fraction
     def __init__(self, input_data, fc_treshold=1, gene_mean_treshold=1000,
                  sample_names=None, nr_of_out = 800, fold=-5, use_large_out_val=False,
                  gene_names=None, counts_file = "out_file", use_log2fc_out=True):
@@ -428,6 +615,7 @@ class TrainTestPreparation():
                  rescale_per_gene=False,
                  rescale_per_sample=False,
                  rescale_by_global_median=True,
+                 divide_by_sf=False,
                  no_rescaling=True, ones_sf=False,
                  no_splitting=False):
         self.data = data
@@ -437,18 +625,25 @@ class TrainTestPreparation():
         self.rescale_per_sample = rescale_per_sample
         self.rescale_by_global_median = rescale_by_global_median
         self.ones_sf = ones_sf
-        self.clip_high_values()
+        self.data = self.clip_high_values()
+        self.set_sf()
         if no_rescaling:
-            self.splited_data = self.split_data_no_rescaling()
+            self.splited_data = self.split_data(self.sf)
         else:
-            self.scaling_factor = self.get_scaling_factor()
+            if divide_by_sf:
+                self.data = self.get_rescaled_by_sf()
+                self.scaling_factor = self.sf
+            else:
+                self.scaling_factor = self.get_scaling_factor()
             if no_splitting:
                 self.processed_data = self.get_processed_data()
             else:
-                self.splited_data = self.split_data()
+                self.splited_data = self.split_data(self.scaling_factor)
             
     def clip_high_values(self):
-        self.data[self.data > 200000] = 200000        
+        cliped_data = deepcopy(self.data)
+        cliped_data[cliped_data > 200000] = 200000
+        return cliped_data
 
     def get_median_factor(self, data, axis=None):      
         if axis is None: # use global median 
@@ -471,7 +666,14 @@ class TrainTestPreparation():
         self.sf = np.ones_like(self.data)
         return sf
     
-    def get_scaling_factor(self):
+    def set_sf(self):
+        if self.sf is None:
+            if self.ones_sf:
+                self.sf = np.ones_like(self.data)
+            else:
+                self.sf = self.get_size_factor()
+    
+    def get_scaling_factor(self):        
         if self.rescale_per_gene:
             median_factor = self.get_median_factor(self.data, axis=0)
         elif self.rescale_per_sample:
@@ -480,36 +682,30 @@ class TrainTestPreparation():
             median_factor = np.repeat(median_factor, self.data.shpe[1], axis=1)
         elif self.rescale_by_global_median:
             median_factor = self.get_median_factor(self.data)
-        if self.sf is None:
-            if self.ones_sf:
-                self.sf = np.ones_like(self.data)
-            else:
-                self.sf = self.get_size_factor()
         scaling_factor = np.multiply(self.sf, median_factor)
         scaling_factor = np.power(scaling_factor, -1.0)
         return scaling_factor
+    
+    def get_rescaled_by_sf(self):
+        self.data = self.data/self.sf
+        return self.data
 
-    def split_data(self):
+    def split_data(self, factor):
         x_train, x_test = train_test_split(self.data,
                                            random_state=False,
-                                           test_size=0.1)        
-        sf_train, sf_test = train_test_split(self.scaling_factor,
-                                           random_state=False,
                                            test_size=0.1)
-        self.splited_data = TrainTestData(x_train, x_test, sf_train, sf_test)
+        sf_train, sf_test = train_test_split(factor,
+                                       random_state=False,
+                                       test_size=0.1)
+        self.splited_data = TrainTestData(x_train, x_test,
+                                          sf_train, sf_test)
         return self.splited_data
     
     def get_processed_data(self):
         self.processed_data = ProcessedData(self.data, self.scaling_factor)
         return self.processed_data
-
-    def split_data_no_rescaling(self):
-        x_train, x_test = train_test_split(self.data, random_state=False,
-                                           test_size=0.1)
-        self.splited_data = TrainTestData(x_train, x_test)
-        return self.splited_data
-
-
+    
+        
 class TrainTestPreparationWithRescaling():
     def __init__(self, data,
                  rescale_per_gene=False,
@@ -576,10 +772,153 @@ class RescaleBack():
         return self.resc_back_data
 
     
+class DataReader():
+    def __init__(self):
+        pass
+    
+    def read_gtex_skin(self):
+        path="/s/project/scared/GTEx/filtered_counts18k.tsv"
+        self.data = self.read_data(path, sep=" ")
+        return self.data
+    
+    def read_gtex_kremer_merged(self):
+        path="/data/ouga/home/ag_gagneur/matusevi/scared-analysis-autoCorrect/scared-analysis-autoCorrect/Data/gtex_bader_merged.tsv"
+        self.data = self.read_data(path, sep=" ")
+        return self.data
+    
+    def read_data(self, path, sep):
+        data_pd = pd.read_csv(path, index_col=0,header=0, sep=sep)
+        data = np.transpose(np.array(data_pd.values))
+        return data
+    
+class DataCooker():
+    def __init__(self, counts, size_factors=None,
+                 inject_outliers=True, inject_on_pred=False,
+                 only_prediction=False, inj_method="OutInjectionFC",
+                 pred_counts=None, pred_sf=None):
+        self.counts=counts
+        self.inject_outliers=inject_outliers
+        self.inject_outliers_on_pred = inject_on_pred
+        self.only_prediction = only_prediction
+        self.inj_method = inj_method
+        if size_factors is not None:
+            self.sf = size_factors
+        else:
+            self.sf = np.ones_like(counts).astype(float)
+        if pred_counts is not None:
+            self.pred_counts = pred_counts
+            if pred_sf is not None:
+                self.pred_sf = pred_sf
+            else:
+                self.pred_sf = np.ones_like(counts).astype(float)
+        else:
+            self.pred_counts = deepcopy(counts)
+            self.pred_sf = self.sf
+      
+    def inject(self, data):
+        print("Using "+self.inj_method+" method!")
+        if self.inj_method == "zeroWhereMean":
+            injected_outliers = ZeroInjectionWhereMean(data)
+        elif self.inj_method == "OutInjectionFC":
+            injected_outliers = OutInjectionFC(data)
+        elif self.inj_method == "OutInjectionZscoreFC":
+            injected_outliers = OutInjectionZscoreFC(data)
+        elif self.inj_method == "OutInjectionFCzero":
+            injected_outliers = OutInjectionFCzero(data)
+        elif self.inj_method == "OutInjectionFCfixed":
+            injected_outliers = OutInjectionFCfixed(data)
+        else:
+            raise ValueError("Please specify one of injection methods: 'zeroWhereMean', 'fcWhereMean', 'fcRandom', 'fcZscoreRandom'")
+        return injected_outliers
+    
+    def get_count_data(self, counts, sf):
+        count_data = TrainTestPreparation(data=counts,sf=sf,
+                                  no_rescaling=False,
+                                  no_splitting=True)
+        return count_data
+    
+    def prepare_rescaled(self, count_data, sf):
+        rescaled = TrainTestPreparation(
+                     data=count_data.processed_data.data, sf=sf,
+                     no_rescaling=False, no_splitting=False,
+                     divide_by_sf=True)
+        return rescaled
+    
+    def prepare_simple(self, count_data):
+        rescaled_simple = TrainTestPreparation(
+                     data=count_data.processed_data.data,
+                     sf=count_data.processed_data.size_factor,
+                     no_rescaling=True, no_splitting=False)
+        return rescaled_simple
+    
+    def prepare_noisy(self, count_data):
+        if self.inject_outliers:
+            inj = self.inject(count_data.processed_data.data)
+            noisy_train_test = TrainTestPreparation(
+                             data=inj.outlier_data.data_with_outliers,
+                             sf=count_data.processed_data.size_factor,
+                             no_rescaling=True, no_splitting=False)
+        else:
+            noisy_train_test = self.prepare_simple(count_data)
+        return noisy_train_test
+    
+    def prepare_pred(self, pred_count_data):  
+        pred_noisy = self.inject(pred_count_data.processed_data.data)
+        return pred_noisy
+                           
+    def data(self, inj_method="OutInjectionFC"):
+        self.inj_method=inj_method
+        count_data = self.get_count_data(self.counts,self.sf)
+        if not self.only_prediction: # <----------------------------- change
+            pred_count_data = deepcopy(count_data)
+            #rescaled = self.prepare_rescaled(count_data, self.sf)
+            simple_train_test = self.prepare_simple(count_data)
+            noisy_train_test = self.prepare_noisy(count_data) 
+        if self.inject_outliers_on_pred:
+            if not np.array_equal(self.counts,self.pred_counts):
+                pred_count_data = self.get_count_data(self.pred_counts,self.pred_sf)
+            pred_noisy = self.prepare_pred(pred_count_data)
+            x_2nd_noise_test = {'inp': pred_noisy.outlier_data.data_with_outliers, 
+                                'sf': pred_count_data.processed_data.size_factor}
+            y_true_idx_test = np.stack([self.pred_counts.astype(int), pred_noisy.outlier_data.index])
+        else:
+            print("Preparing data!")
+            x_2nd_noise_test = {'inp': count_data.processed_data.data, 
+                                'sf': count_data.processed_data.size_factor}
+            y_true_idx_test = None
+        
+        if not self.only_prediction: # <----------------------------- change
+            x_noisy_train = {'inp': noisy_train_test.splited_data.train,
+                             'sf': noisy_train_test.splited_data.size_factor_train}                
+            x_train = simple_train_test.splited_data.train        
+            x_noisy_valid = {'inp': noisy_train_test.splited_data.test,
+                             'sf': noisy_train_test.splited_data.size_factor_test}        
+            x_valid = simple_train_test.splited_data.test
+        if self.only_prediction: # <----------------------------- change
+            cooked_data = (None, None),(None, None), (x_2nd_noise_test, None)
+        else:
+            cooked_data = (x_noisy_train, x_train),(x_noisy_valid, x_valid), (x_2nd_noise_test, y_true_idx_test)
+   
+        return cooked_data
+
+#class DataCookerOnlyPrediction(DataCooker):
+#    def __init__(self, counts, size_factors=None,
+#                 inject_outliers=True, inject_on_pred=False,
+#                 inj_method="OutInjectionFC",
+#                 pred_counts=None, pred_sf=None):
+#        super.__init__(counts, size_factors,
+#                 inject_outliers, inject_on_pred,
+#                 inj_method, pred_counts, pred_sf)
+        
+#    def data(self, inj_method="OutInjectionFC"):
+#        self.inj_method=inj_method
+        
+        
 class EvaluationOfOutInjection():
     def __init__(self, out_data, out_idx, orig_data=None,
                  q="None", out_fc="None", data_origin=" ", 
-                 pdf_name="ev_inj.pdf", in_log_scale=True):
+                 pdf_name="ev_inj.pdf", save_to_file=False,
+                 in_log_scale=False):
         self.q = q
         self.fc = out_fc
         self.in_log = in_log_scale
@@ -588,15 +927,18 @@ class EvaluationOfOutInjection():
         self.out_data = out_data
         self.out_idx = out_idx
         self.orig_data = orig_data
+        self.save_to_file = save_to_file
         self.sample_s = self.get_sample_s()
         self.gene_s = self.get_gene_s()
         self.st = self.summary_table()
         self.sample_with_out_idx = self.get_sample_with_out_idx()
+        self.gene_with_out_idx = self.get_gene_with_out_idx()
         if orig_data is not None:
             with PdfPages(self.pdf_name) as self.pdf:
                 self.plot_injected_vs_no_out_one_sample()
+                self.plot_injected_vs_no_out_one_gene()
                 self.plot_outliers_vs_true_vals()
-            
+        
     def get_sample_s(self):
         s =np.sum(self.out_idx, axis=1)
         return s
@@ -636,7 +978,7 @@ class EvaluationOfOutInjection():
     def plot_injected_vs_no_out_one_sample(self, idx=0):
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.set_title('Middle layer q = %s\nOutlier fold change fc = %s\n%s'%(self.q,self.fc,self.data_origin), fontsize=14)
+        ax.set_title('One sample. Middle layer q = %s\nOutlier fold change fc = %s\n%s'%(self.q,self.fc,self.data_origin), fontsize=14)
         ax.scatter(self.out_data[self.sample_with_out_idx[idx]],
                     self.orig_data[self.sample_with_out_idx[idx]],
                     c=self.out_idx[self.sample_with_out_idx[idx]], label="Outlier")
@@ -650,7 +992,8 @@ class EvaluationOfOutInjection():
             plt.yscale('log')
             plt.xscale('log')
         plt.show()
-        self.pdf.savefig(fig)
+        if self.save_to_file:
+            self.pdf.savefig(fig)
         plt.close()
     
     def plot_outliers_vs_true_vals(self):
@@ -673,9 +1016,30 @@ class EvaluationOfOutInjection():
         ax.set_ylabel("Counts")
         ax.set_xlabel("All samples with injected outliers in random order")
         plt.show()
-        self.pdf.savefig(fig)
+        if self.save_to_file:
+            self.pdf.savefig(fig)
         plt.close()
-
+        
+    def plot_injected_vs_no_out_one_gene(self, idx=0):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title('One gene. Middle layer q = %s\nOutlier fold change fc = %s\n%s'%(self.q,self.fc,self.data_origin), fontsize=14)
+        ax.scatter(self.out_data[:, self.gene_with_out_idx[idx]],
+                    self.orig_data[:, self.gene_with_out_idx[idx]],
+                    c=self.out_idx[:, self.gene_with_out_idx[idx]], label="Outlier")
+        ax.set_xlabel("Data with outliers")
+        ax.set_ylabel("Data without outliers")
+        plt.legend(loc="lower right", markerscale=0.7, scatterpoints=1, fontsize=10)
+        ax = plt.gca()
+        leg = ax.get_legend()
+        leg.legendHandles[0].set_color('yellow')
+        if self.in_log:
+            plt.yscale('log')
+            plt.xscale('log')
+        plt.show()
+        if self.save_to_file:
+            self.pdf.savefig(fig)
+        plt.close()
         
     def summary_table(self):
         d = {'Total nr of outliers': [self.get_number_of_outliers()],
@@ -693,7 +1057,7 @@ class EvaluationOfOutInjection():
              'props': [('display', 'none;')]
             }
         ])
-        return df
+        return df    
     
         
 class EvaluationOfFit():

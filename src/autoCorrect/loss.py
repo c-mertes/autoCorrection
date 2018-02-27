@@ -4,9 +4,6 @@ import numpy as np
 from keras import backend as K
 
 
-
-
-
 def _nan2zero(x):
     return tf.where(tf.is_nan(x), tf.zeros_like(x), x)
 
@@ -15,11 +12,14 @@ def _nelem(x):
     nelem = tf.reduce_sum(tf.cast(~tf.is_nan(x), tf.float32))
     return tf.cast(tf.where(tf.equal(nelem, 0.), 1., nelem), x.dtype)
 
+def _nan2inf(x):
+    return tf.where(tf.is_nan(x), tf.zeros_like(x)+np.inf, x)
+
 
 class NB(object):
     def __init__(self, theta=None, theta_default=None, theta_init=[0.0],
                  masking=False, scope='nbinom_loss/',
-                 scale_factor=1.0, debug=False):
+                 scale_factor=1.0, debug=False, out_idx=None):
 
         # for numerical stability
         self.eps = 1e-10
@@ -30,6 +30,7 @@ class NB(object):
         self.masking = masking
         self.theta = theta
         self.theta_default = theta_default
+        self.out_idx = out_idx
 
         with tf.name_scope(self.scope):
             # a variable may be given by user or it can be created here
@@ -45,6 +46,8 @@ class NB(object):
             # to keep dispersion always non-negative
             self.theta = tf.nn.softplus(theta)
             #self.theta = theta
+            if self.out_idx is not None:
+                self.out_idx = tf.cast(self.out_idx, tf.bool)
 
     def loss(self, y_true, y_pred, mean=True):
         scale_factor = self.scale_factor
@@ -105,19 +108,11 @@ class NB(object):
                 if self.masking:
                     final = tf.divide(tf.reduce_sum(final), nelem)
                 else:
-                    final = tf.reduce_mean(final)
-
+                     if self.out_idx is not None:
+                        final = tf.boolean_mask(final, self.out_idx)    
+                        final = tf.reduce_mean(final)
+            final = _nan2inf(final)            
         return final
-
-
-
-
-
-
-
-
-
-
 
 
 
