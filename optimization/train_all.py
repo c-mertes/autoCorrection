@@ -23,11 +23,11 @@ from autoCorrect import autoencoder
 def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
 
-DIR_ROOT = os.path.expanduser("~/new_test/autoCorrect")
+DIR_ROOT = os.getcwd() #+"/optimization"
 DIR_OUT_TRIALS = DIR_ROOT + "/trials/"
 DIR_OUT_RESULTS = DIR_ROOT + "/saved_models/best/"
 
-MAX_EVALS = 600
+MAX_EVALS = 20
 KILL_TIMEOUT = 60 * 80  # 30 minutes
 
 DB_NAME = "corrector"
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     run_test = not args.notest
     
     # --------------------------------------------
-    exp_name = "exp1"
+    exp_name = "exp8"
     print_exp(exp_name)
     # -----
     fn = CompileFN(DB_NAME, exp_name,

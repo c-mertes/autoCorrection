@@ -3,7 +3,7 @@ import scipy as sp
 from sklearn.metrics import confusion_matrix
 from statsmodels.stats.multitest import fdrcorrection
 from keras import backend as K
-from loss import NB
+from autoCorrect.loss import NB
 
 class OutlierRecall():
     def __init__(self, theta, threshold):
