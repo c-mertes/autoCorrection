@@ -9,8 +9,6 @@ import data
 import model
 from joblib import Parallel, delayed
 import argparse
-#from concise.hyopt import CompileFN, CMongoTrials, test_fn
-#from kopt import CompileFN, KMongoTrials, test_fn
 from hyopt import *
 from metrics import *
 import json
@@ -23,7 +21,7 @@ from autoCorrect import autoencoder
 def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
 
-DIR_ROOT = os.path.expanduser("~/new_test/autoCorrect")
+DIR_ROOT = os.getcwd() #+"/optimization"
 DIR_OUT_TRIALS = DIR_ROOT + "/trials/"
 DIR_OUT_RESULTS = DIR_ROOT + "/saved_models/best/"
 
@@ -74,7 +72,7 @@ if __name__ == "__main__":
     run_test = not args.notest
     
     # --------------------------------------------
-    exp_name = "exp1"
+    exp_name = "expX"
     print_exp(exp_name)
     # -----
     fn = CompileFN(DB_NAME, exp_name,
