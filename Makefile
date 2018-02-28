@@ -38,7 +38,7 @@ test_optimization: run_workers
 
 run_workers:
 	cd optimization; \
-	for run in {1..5};\
+	for run in {1..20};\
 	do\
 		sbatch worker_script.sh;\
 	done	

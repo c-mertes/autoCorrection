@@ -9,8 +9,6 @@ import data
 import model
 from joblib import Parallel, delayed
 import argparse
-#from concise.hyopt import CompileFN, CMongoTrials, test_fn
-#from kopt import CompileFN, KMongoTrials, test_fn
 from hyopt import *
 from metrics import *
 import json
@@ -27,7 +25,7 @@ DIR_ROOT = os.getcwd() #+"/optimization"
 DIR_OUT_TRIALS = DIR_ROOT + "/trials/"
 DIR_OUT_RESULTS = DIR_ROOT + "/saved_models/best/"
 
-MAX_EVALS = 20
+MAX_EVALS = 600
 KILL_TIMEOUT = 60 * 80  # 30 minutes
 
 DB_NAME = "corrector"
@@ -74,7 +72,7 @@ if __name__ == "__main__":
     run_test = not args.notest
     
     # --------------------------------------------
-    exp_name = "exp8"
+    exp_name = "expX"
     print_exp(exp_name)
     # -----
     fn = CompileFN(DB_NAME, exp_name,
