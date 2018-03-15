@@ -1,0 +1,16 @@
+variables:
+  PKGNAME:     "autoCorrect"
+  PyVER:       "3-5.0.1"
+  
+before_script:
+  - module load "i12g/anaconda/$PyVER"
+  - virtualenv $PKGNAME
+  - source ./$PKGNAME/bin/activate
+  - pip install .
+  - pip install tensorflow
+  - pip install cytoolz
+  
+main-test:
+  tags: [shell]
+  script:
+    - python -m unittest discover
