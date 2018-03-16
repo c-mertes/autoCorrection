@@ -98,7 +98,7 @@ Usage
 Documentation
 =============
 
-https://autocorrect.readthedocs.io/
+https://i12g-gagneurweb.in.tum.de/public/docs/autocorrect/
 
 Development
 ===========
