@@ -3,13 +3,13 @@ import scipy as sp
 from sklearn.metrics import confusion_matrix
 from statsmodels.stats.multitest import fdrcorrection
 from keras import backend as K
-from autoCorrect.loss import NB
+from autoCorrect.losses import NB
 
 class OutlierRecall():
     def __init__(self, theta, threshold):
         self.theta = theta
         self.threshold = threshold
-        
+
     def __call__(self, y_true, pred_mean):
         counts = y_true[0]
         idx = y_true[1]
@@ -17,7 +17,7 @@ class OutlierRecall():
         recall = self.get_recall(outlier_table)
         self.get_recall(outlier_table)
         return recall
-        
+
     def get_outlier_table(self, counts, mu, idx):
         p_vals = []
         theta = np.empty_like(counts)
@@ -35,22 +35,22 @@ class OutlierRecall():
         table_x = np.concatenate((p_vals_fdr[1].reshape(p_vals_fdr[1].shape[0],1),
                           p_vals_fdr[0].reshape(p_vals_fdr[0].shape[0],1)), axis=1)
         table = np.concatenate((table_x, idx.reshape(idx.shape[0],1)), axis=1)
-        return table # pvals, pred (significance), true (idx) 
-    
+        return table # pvals, pred (significance), true (idx)
+
     def get_recall(self, outlier_table):
         tn, fp, fn, tp = confusion_matrix(outlier_table[:self.threshold,2], outlier_table[:self.threshold,1]).ravel()
         recall = tp / (tp + fp)
         return recall
-        
-        
+
+
 class OutlierLoss():
     def __init__(self):
         pass
-        
+
     def __call__(self, y_true, pred_mean):
         counts = y_true[0].flatten()
         idx = y_true[1].flatten()
         pred_mean = pred_mean.flatten()
-        nb = NB(out_idx=idx) 
-        loss_res = K.eval(nb.loss(counts,pred_mean)) 
+        nb = NB(out_idx=idx)
+        loss_res = K.eval(nb.loss(counts,pred_mean))
         return loss_res

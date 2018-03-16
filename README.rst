@@ -70,10 +70,10 @@ Installation
 
     git clone [this repo]
     
-    cd autocorrect
+    cd autoCorrect
     make install
     
-    #later will be available:
+    #later:
     #pip install autcorrect
 
 
@@ -82,10 +82,18 @@ Usage
 
 ::
 
+    #in python:
     python
-    import autocorrect
+    import autoCorrect
+    import numpy
+    counts = numpy.random.negative_binomial(n = 20, p=0.2, size = (10,8))
+    sf = numpy.ones((10,1))
+    c = autoCorrect.correctors.AECorrector().correct(counts = counts, size_factors = sf)
     
-
+    #in R:
+    library(reticulate)
+    autoCorrect <- import("autoCorrect")
+    corrected <- autoCorrect$correctors$AECorrector(model_name, model_directory)$correct(COUNTS, SIZE_FACTORS, only_predict=FALSE)
 
 Documentation
 =============

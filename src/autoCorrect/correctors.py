@@ -6,9 +6,13 @@ from keras.optimizers import Adam, RMSprop
 from keras.models import model_from_json
 import numpy as np
 import json
+import sys
+import os
+dir, filename = os.path.split(__file__)
+MODEL_PATH = os.path.join(dir, "../../saved_models")
+OPT_PARAM_PATH = os.path.join(dir, "../../optimization/saved/best/")
 
-
-class Corrector():        
+class Corrector():
     @abstractmethod
     def correct(self, counts, size_factors, **kwargs):
         pass
@@ -23,61 +27,67 @@ class DummyCorrector(Corrector):
 
 
 class AECorrector(Corrector):
-    def __init__(self, model_name="model", model_directory="/s/project/scared/model",
-                 param_path=None, denoisingAE=True,
-                 save_model=True, 
-                 inject_zeros=True, epochs=250, encoding_dim=23, lr=0.00068, batch_size=None):
-        if param_path is not None:
-            metrics = json.load(open(param_path))
-            self.denoisingAE = metrics['inj_out'] #metrics['param']['data']['inject_outliers']
-            self.inject_zeros = metrics['inj_z'] #metrics['param']['data']['inject_zeros']
-            self.epochs = metrics['epochs'] #metrics['param']['fit']['epochs']
-            self.encoding_dim = metrics['m_emb'] #metrics['param']['model']['encoding_dim']
-            self.lr = metrics['m_lr'] #metrics['param']['model']['lr']
+    def __init__(self, model_name="model", model_directory=MODEL_PATH, verbose=1,
+                 param_path=OPT_PARAM_PATH, param_exp_name=None, denoisingAE=True,
+                 save_model=True, epochs=250, encoding_dim=23, lr=0.00068, batch_size=None):
+        self.denoisingAE = denoisingAE
+        self.save_model = save_model
+        self.model_name = model_name
+        self.directory = model_directory
+        self.verbose = verbose
+        if param_exp_name is not None:
+            path = param_path+param_exp_name+"_best.json"
+            metrics = json.load(open(path))
+            self.batch_size = metrics['batch_size']
+            self.epochs = metrics['epochs']
+            self.encoding_dim = metrics['encoding_dim']
+            self.lr = metrics['lr']
         else:
-            self.denoisingAE = denoisingAE
-            self.inject_zeros = inject_zeros
             self.epochs = epochs
             self.encoding_dim = encoding_dim
             self.lr = lr
             self.batch_size = batch_size
-            self.save_model = save_model
-            self.model_name = model_name
-            self.directory = model_directory
 
-    def correct(self, counts, size_factors, only_predict=False):
+    def correct(self, counts, size_factors=None, only_predict=False):
         if len(counts.shape) == 1:
             counts = counts.reshape(1,counts.shape[0])
             size_factors = size_factors.reshape(1,size_factors.shape[0])
+        if size_factors is not None and counts.shape != size_factors.shape:
+            raise ValueError("Size factors and counts must have equal dimensions."+
+                             "\nNow counts shape:"+str(counts.shape)+ \
+                            "\nSize factors shape:"+str(size_factors.shape))
+        if not os.path.isfile(self.directory+'/'+self.model_name+'.json') and only_predict:
+            raise ValueError("There is no model "+str(self.directory+'/'+self.model_name+'.json')+
+                  "' saved. Only predict is not possible!")
         self.loader = DataCooker(counts, size_factors,
                                  inject_outliers=self.denoisingAE,
-                                 only_prediction=only_predict)# 
+                                 only_prediction=only_predict)
         self.data = self.loader.data()
         if not only_predict:
             self.ae = Autoencoder(choose_autoencoder=True,
                                   encoding_dim=self.encoding_dim,
                                   size=counts.shape[1])
             self.ae.model.compile(optimizer=Adam(lr=self.lr), loss=self.ae.loss)
-            self.ae.model.fit(self.data[0][0], self.data[0][1],  
+            self.ae.model.fit(self.data[0][0], self.data[0][1],
                                 epochs=self.epochs,
                                 batch_size=self.batch_size,
                                 shuffle=True,
                                 validation_data=(self.data[1][0], self.data[1][1]),
-                                verbose=1
+                                verbose=self.verbose
                                )
             if self.save_model:
                 model_json = self.ae.model.to_json()
-                with open(self.directory+'/'+self.model_name+'.json', "w") as json_file: # <------what directory?
+                with open(self.directory+'/'+self.model_name+'.json', "w") as json_file:
                     json_file.write(model_json)
                 self.ae.model.save_weights(self.directory+'/'+self.model_name+'_weights.h5')
                 print("Model saved on disk!")
             model = self.ae.model
         else:
-            json_file = open(self.directory+'/'+self.model_name+'.json', 'r') # <------what directory?
+            json_file = open(self.directory+'/'+self.model_name+'.json', 'r')
             loaded_model_json = json_file.read()
             json_file.close()
             model = model_from_json(loaded_model_json,
-                                            custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
+                    custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
             model.load_weights(self.directory+'/'+self.model_name+'_weights.h5')
             print("Model loaded from disk!")
         self.corrected = model.predict(self.data[2][0])
@@ -85,7 +95,6 @@ class AECorrector(Corrector):
 
 
 
-    
 
-        
-        
+
+

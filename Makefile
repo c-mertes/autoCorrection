@@ -13,7 +13,7 @@ test: clean_test
 
 distclean: clean
 
-clean: clean_installation clean_test clean_opt
+clean: clean_installation clean_test 
 
 clean_installation:
 	rm -rf src/autoCorrect.egg-info/ dist/

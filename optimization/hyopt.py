@@ -1,12 +1,14 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 from keras.callbacks import EarlyStopping, History, TensorBoard, ModelCheckpoint
 from keras.models import load_model
 import hyperopt
 from hyperopt.utils import coarse_utcnow
 from hyperopt.mongoexp import MongoTrials
-import concise.eval_metrics as ce
-from concise.utils.helper import write_json, merge_dicts, _to_string
-from concise.utils.model_data import (subset, split_train_test_idx, split_KFold_idx)
+import kopt.eval_metrics as ce
+from kopt.utils import write_json, merge_dicts, _to_string
+from kopt.model_data import (subset, split_train_test_idx, split_KFold_idx)
 from datetime import datetime, timedelta
 from uuid import uuid4
 from hyperopt import STATUS_OK
@@ -18,6 +20,7 @@ import glob
 import pprint
 import logging
 import matplotlib.pyplot as plt
+
 
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s')
