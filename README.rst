@@ -69,6 +69,7 @@ Activate the environment
 Install packages 
 
     pip install tensorflow
+    
     pip install keras
 
 
