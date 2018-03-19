@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from hyperopt import fmin, tpe, hp
+from hyperopt import fmin, tpe, hp, Trials
 import numpy as np
 import os
 import sys
