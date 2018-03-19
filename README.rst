@@ -48,8 +48,8 @@ Overview
 
 * Free software: MIT license
 
-Install tensorflow and keras
-============================
+Install tensorflow 
+==================
 
 If you have problems with virtualenv, installing using conda may help: 
 
@@ -70,8 +70,6 @@ Activate the environment
 Install packages 
 
     pip install tensorflow
-    
-    pip install keras
 
 
 
