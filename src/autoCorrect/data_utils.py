@@ -177,8 +177,10 @@ class TrainTestPreparation():
             median_factor = np.repeat(median_factor, self.data.shpe[1], axis=1)
         elif self.rescale_by_global_median:
             median_factor = self.get_median_factor(self.data)
-        scaling_factor = np.multiply(self.sf, median_factor)
+        scaling_factor = np.multiply(self.sf, median_factor+1)
         scaling_factor = np.power(scaling_factor, -1.0)
+        if not scaling_factor.all():
+            raise ValueError("At least some scaling factors are zeros:\n"+scaling_factor)
         return scaling_factor
 
     def get_rescaled_by_sf(self):
