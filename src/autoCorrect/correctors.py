@@ -6,11 +6,10 @@ from keras.optimizers import Adam, RMSprop
 from keras.models import model_from_json
 import numpy as np
 import json
-import sys
 import os
 dir, filename = os.path.split(__file__)
-MODEL_PATH = os.path.join(dir, "../../saved_models")
-OPT_PARAM_PATH = os.path.join(dir, "../../optimization/saved/best/")
+MODEL_PATH = os.path.join(dir,"..","..","saved_models")
+OPT_PARAM_PATH = os.path.join(dir, "..","..","optimization","saved","best")
 
 class Corrector():
     @abstractmethod
@@ -56,8 +55,8 @@ class AECorrector(Corrector):
             raise ValueError("Size factors and counts must have equal dimensions."+
                              "\nNow counts shape:"+str(counts.shape)+ \
                             "\nSize factors shape:"+str(size_factors.shape))
-        if not os.path.isfile(self.directory+'/'+self.model_name+'.json') and only_predict:
-            raise ValueError("There is no model "+str(self.directory+'/'+self.model_name+'.json')+
+        if not os.path.isfile(os.path.join(self.directory,self.model_name+'.json')) and only_predict:
+            raise ValueError("There is no model "+str(os.path.join(self.directory,self.model_name+'.json'))+
                   "' saved. Only predict is not possible!")
         self.loader = DataCooker(counts, size_factors,
                                  inject_outliers=self.denoisingAE,
@@ -77,18 +76,18 @@ class AECorrector(Corrector):
                                )
             if self.save_model:
                 model_json = self.ae.model.to_json()
-                with open(self.directory+'/'+self.model_name+'.json', "w") as json_file:
+                with open(os.path.join(self.directory,self.model_name+'.json'), "w") as json_file:
                     json_file.write(model_json)
-                self.ae.model.save_weights(self.directory+'/'+self.model_name+'_weights.h5')
+                self.ae.model.save_weights(os.path.join(self.directory,self.model_name+'_weights.h5'))
                 print("Model saved on disk!")
             model = self.ae.model
         else:
-            json_file = open(self.directory+'/'+self.model_name+'.json', 'r')
+            json_file = open(os.path.join(self.directory,self.model_name+'.json'), 'r')
             loaded_model_json = json_file.read()
             json_file.close()
             model = model_from_json(loaded_model_json,
                     custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
-            model.load_weights(self.directory+'/'+self.model_name+'_weights.h5')
+            model.load_weights(os.path.join(self.directory,self.model_name+'_weights.h5'))
             print("Model loaded from disk!")
         self.corrected = model.predict(self.data[2][0])
         return self.corrected

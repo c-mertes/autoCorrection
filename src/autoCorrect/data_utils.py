@@ -206,22 +206,22 @@ class DataReader():
         pass
 
     def read_gtex_blood(self):
-        path = os.path.join(DIR, "../../data", "whole_blood_gtex.tsv")
+        path = os.path.join(DIR, "..", "..", "data", "whole_blood_gtex.tsv")
         self.data = self.read_data(path, sep="\t")
         return self.data
 
     def read_gtex_skin(self):
-        path = os.path.join(DIR, "../../data", "skin_gtex.tsv")
+        path = os.path.join(DIR, "..", "..", "data", "skin_gtex.tsv")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_skin_small(self):
-        path = os.path.join(DIR, "../../data", "skin_small.tsv")
+        path = os.path.join(DIR, "..", "..", "data", "skin_small.tsv")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_gtex_several_tissues(self):
-        path=os.path.join(DIR, "../../data", "wbl_br1_br2_bst_hrt_skn.tsv")
+        path=os.path.join(DIR, "..", "..", "data", "wbl_br1_br2_bst_hrt_skn.tsv")
         self.data = self.read_data(path, sep="\t")
         return self.data
 
