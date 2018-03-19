@@ -56,6 +56,7 @@ If you have problems with virtualenv, installing using conda may help:
 (Installation of conda: https://conda.io/docs/user-guide/install/index.html)
 
     pip uninstall virtualenv
+    
     conda install virtualenv
 
 Create virual environment with a name you like (here env-with-tensorflow)
