@@ -1,5 +1,5 @@
 from keras.optimizers import RMSprop, Adam
-from autoencoder import Autoencoder
+from .autoencoder import Autoencoder
 
 class OptimizationModel():
     def __init__(self):
