@@ -35,7 +35,7 @@ class AECorrector(Corrector):
         self.directory = model_directory
         self.verbose = verbose
         if param_exp_name is not None:
-            path = param_path+param_exp_name+"_best.json"
+            path = os.path.join(param_path,param_exp_name+"_best.json")
             metrics = json.load(open(path))
             self.batch_size = metrics['batch_size']
             self.epochs = metrics['epochs']

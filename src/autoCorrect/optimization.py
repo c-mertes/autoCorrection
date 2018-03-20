@@ -119,7 +119,7 @@ class RunFN():
         best['encoding_dim'] = self.values.q[best['encoding_dim']]
         best['batch_size'] = self.values.batch[best['batch_size']]
         best['epochs'] = self.values.epochs[best['epochs']]
-        with open(DIR_OUT_RESULTS+self.exp_name+"_best.json", 'wt') as f:
+        with open(os.path.join(DIR_OUT_RESULTS,self.exp_name+"_best.json"), 'wt') as f:
             json.dump(best, f)
         print("----------------------------------------------------")
         print("best_parameters: " + str(best))
@@ -136,7 +136,7 @@ class Optimization():
                  port=22334, nr_of_trials=1, only_lr=False, only_epochs=False,
                  only_batch=False, only_q=False):
         self.metric = metric
-        self.path = data_path
+        self.data_path = data_path
         self.sep = sep
         self.run_on_mongodb = run_on_mongodb
         self.start_mongodb = start_mongodb
@@ -151,29 +151,29 @@ class Optimization():
         self.only_q = only_q
 
     def __call__(self):
-        print_exp(exp_name)
-        if only_q:
+        print_exp(self.exp_name)
+        if self.only_q:
             pv = ParamValues(
                 lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
                 q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
                 epochs=(250,),
                 batch=(32,)
             )
-        elif only_batch:
+        elif self.only_batch:
             pv = ParamValues(
                 lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
                 q=(23,),
                 epochs=(250,),
                 batch=(16, 32, 50, 100, 128, 200)
             )
-        elif only_epochs:
+        elif self.only_epochs:
             pv = ParamValues(
                 lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
                 q=(23,),
                 epochs=(100, 120, 150, 170, 200, 250, 300, 400, 500),
                 batch=(32,)
             )
-        elif only_lr:
+        elif self.only_lr:
             pv = ParamValues(
                 lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
                 q=(23,),
@@ -201,9 +201,9 @@ class Optimization():
             }
         }
 
-        run = RunFN(metric, hyper_params, pv,
-                    data_path, sep, run_on_mongodb, start_mongodb,
-                    db_name, exp_name, ip, port, nr_of_trials)
+        run = RunFN(self.metric, hyper_params, pv,
+                    self.data_path, self.sep, self.run_on_mongodb, self.start_mongodb,
+                    self.db_name, self.exp_name, self.ip, self.port, self.nr_of_trials)
         run()
 
 
