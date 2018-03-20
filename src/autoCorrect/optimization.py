@@ -5,7 +5,7 @@ import os
 import sys
 import signal
 from .optimization_data import OptimizationData
-import .optimization_model
+from .optimization_model import OptimizationModel
 import argparse
 from hyopt import *
 from .optimization_metrics import *
@@ -89,10 +89,11 @@ class RunFN():
         else:
             trials = Trials()
         dat = OptimizationData(m_pid, w_pid, self.path, self.sep)
+        mod = OptimizationModel()
         if self.metric == "OutlierLoss":
             fn = CompileFN(self.db_name, self.exp_name,
                            data_fn=dat.data,
-                           model_fn=optimization_model.model,
+                           model_fn=mod.model,
                            add_eval_metrics={"outlier_loss": OutlierLoss()},
                            loss_metric="outlier_loss",  # which metric to optimize for
                            loss_metric_mode="min",  # try to maximize the metric
@@ -103,7 +104,7 @@ class RunFN():
         elif self.metric == "OutlierRecall":
             fn = CompileFN(self.db_name, self.exp_name,
                            data_fn=dat.data,
-                           model_fn=optimization_model.model,
+                           model_fn=mod.model,
                            add_eval_metrics={"outlier_recall": OutlierRecall(theta=25, threshold=1000)},
                            loss_metric="outlier_recall",  # which metric to optimize for
                            loss_metric_mode="max",  # try to maximize the metric
