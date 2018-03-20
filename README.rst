@@ -36,9 +36,9 @@ Overview
 
 * Free software: MIT license
 
-Activate virtual environment 
+Activate virtual environment
 ==================
-Together with the autoCorrect package you will get 
+Together with the autoCorrect package you will get
 
         'tensorflow',
         'toolz',
@@ -56,18 +56,18 @@ packages automatically installed, if not present.
 
 If you don't wannt to install these packages globally, please use virtual environment.
 
-If you have problems with virtualenv, installing using conda may help: 
+If you have problems with virtualenv, installing using conda may help:
 
 (Installation of conda: https://conda.io/docs/user-guide/install/index.html)
 
     pip uninstall virtualenv
-    
+
     conda install virtualenv
 
 Create virual environment with a name you like (here env-with-autoCorrect)
 
     virtualenv env-with-autoCorrect
-    
+
 Activate the environment
 
     source env-with-autoCorrect/bin/activate
@@ -80,14 +80,15 @@ Package Installation
 
 ::
 
-    git clone [this repo]
-    
-    cd autoCorrect
-    make install
-    
-    #later:
-    #pip install autcorrect
+    pip install autCorrect
 
+
+Deactivate virtual environment
+============
+
+::
+
+    deactivate
 
 Usage
 ============
@@ -102,7 +103,7 @@ Usage
     sf = np.ones((10,8))
     corrector = autoCorrect.correctors.AECorrector()
     c = corrector.correct(counts = counts, size_factors = sf)
-    
+
     #in R:
     library(reticulate)
     autoCorrect <- import("autoCorrect")
