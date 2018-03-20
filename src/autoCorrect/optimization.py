@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
 from hyperopt import fmin, tpe, hp, Trials
-import os
 import sys
-import signal
 from .optimization_data import OptimizationData
 from .optimization_model import OptimizationModel
-import argparse
 from .hyopt import *
 from .optimization_metrics import *
 import json
@@ -14,6 +11,7 @@ import tempfile
 import subprocess
 from kopt.utils import merge_dicts
 import pymongo
+import os
 
 def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
@@ -69,7 +67,7 @@ class RunFN():
                 )
                 #workers_list = []
                 #if self.nr_of_workers > self.max_evals:
-                #       self.nr_of_workers = copy(self.max_evals) 
+                #       self.nr_of_workers = copy(self.max_evals)
                 #for p in range(1,self.nr_of_workers):
                 proc_args_worker = ["hyperopt-mongo-worker",
                                     "--mongo="+str(self.ip)+":"+os.path.join(str(self.port),str(self.db_name)),
@@ -79,7 +77,7 @@ class RunFN():
                     env=merge_dicts(os.environ, {"PYTHONPATH": os.getcwd()}),
                 )
                     #workers_list.append(mongo_worker_proc)
-                    
+
                 m_pid = mongodb_proc.pid
                 w_pid = mongo_worker_proc.pid
             try:
@@ -216,62 +214,3 @@ class Optimization():
                     self.nr_of_workers)
         run()
 
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="run hyper-parameter optimization")
-    parser.add_argument('--notest', action='store_true',
-                        help="If specified runs actual optimization, if not provided runs test only.")
-    parser.add_argument("--data_path", type=str, default=None,
-                        help="The path to data file with count table for which the optimization should be done,"+
-                             " first row should contain column names, firs column - row names.If not provided, "+
-                             "in package included sample data set (GTEX skin tissue) is used for optimization.")
-    parser.add_argument('--field_sep', type=str, default=" ", help="Field separator in data file (default: space).")
-    parser.add_argument('--nr_of_trials', type=int, default=1, help="Number of optimization trials (default 1).")
-    parser.add_argument('--nr_of_workers', type=int, default=1, help="Number of mongoDB workers (default 1).")
-    parser.add_argument('--use_metric', type=str, default="OutlierLoss",
-                        help="Available metrics for --use_metric are: 'OutlierLoss'(default), 'OutlierRecall'.")
-
-    parser.add_argument('--run_on_mongodb', action='store_true',
-                        help="For this option mongoDB and workers should be running with corresponding port,"+
-                             " host and data base name (or flag --start_mongodb should be provided)."+
-                             " If not specified runs locally.")
-    parser.add_argument('--start_mongodb', action='store_true',
-                        help="Start mongodb and worker from this script.")
-
-    parser.add_argument('--db_name', type=str, default="corrector", help="Mongodb database name (default: 'corrector').")
-    parser.add_argument('--exp_name', type=str, default="exp1", help="Name of experiment.")
-    parser.add_argument('--ip', type=str, default="localhost", help="IP or host of mongodb (default: 'localhost').")
-    parser.add_argument('--port', type=int, default=22334, help="Port of mongodb (default: 22334).")
-
-
-    parser.add_argument('--optimize_only_enc_dim', action='store_true',help="Flag to optimize only encoding dimension.")
-    parser.add_argument('--optimize_only_batch_size', action='store_true', help="Flag to optimize only batch size.")
-    parser.add_argument('--optimize_only_epochs', action='store_true', help="Flag to optimize only number of epochs.")
-    parser.add_argument('--optimize_only_lr', action='store_true', help="Flag to optimize only learning rate.")
-
-    args = parser.parse_args()
-    data_path = args.data_path
-    sep = args.field_sep
-    metric = args.use_metric
-    nr_of_trials = args.nr_of_trials
-    if not args.notest:
-        nr_of_trials = 1
-    run_on_mongodb = args.run_on_mongodb
-    start_mongodb = args.start_mongodb
-    db_name = args.db_name
-    exp_name = args.exp_name
-    ip = args.ip
-    port = args.port
-    only_q = args.optimize_only_enc_dim
-    only_batch = args.optimize_only_batch_size
-    only_epochs = args.optimize_only_epochs
-    only_lr = args.optimize_only_lr
-
-
-    opt = Optimization(metric, data_path, sep,
-                       run_on_mongodb, start_mongodb,
-                       db_name, exp_name, ip, port,
-                       nr_of_trials, nr_of_workers, only_lr, only_epochs,
-                       only_batch, only_q)
-    opt()
