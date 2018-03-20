@@ -7,26 +7,11 @@ Overview
 .. list-table::
     :stub-columns: 1
 
-    * - docs
-      - |docs|
-    * - tests
-      - | |travis| |appveyor| |requires|
-        | |codecov|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
 
-.. |docs| image:: https://readthedocs.org/projects/autonorm/badge/?style=flat
-    :target: https://readthedocs.org/projects/autonorm
-    :alt: Documentation Status
 
-.. |travis| image:: https://travis-ci.org/matusevi/autonorm.svg?branch=master
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/matusevi/autonorm
-
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/matusevi/autonorm?branch=master&svg=true
-    :alt: AppVeyor Build Status
-    :target: https://ci.appveyor.com/project/matusevi/autonorm
 
 .. |requires| image:: https://requires.io/github/matusevi/autonorm/requirements.svg?branch=master
     :alt: Requirements Status
@@ -63,7 +48,32 @@ Overview
 
 * Free software: MIT license
 
-Installation
+Install tensorflow 
+==================
+
+If you have problems with virtualenv, installing using conda may help: 
+
+(Installation of conda: https://conda.io/docs/user-guide/install/index.html)
+
+    pip uninstall virtualenv
+    
+    conda install virtualenv
+
+Create virual environment with a name you like (here env-with-tensorflow)
+
+    virtualenv env-with-tensorflow
+    
+Activate the environment
+
+    source env-with-tensorflow/bin/activate
+
+Install packages 
+
+    pip install tensorflow
+
+
+
+Package Installation
 ============
 
 ::
@@ -88,7 +98,8 @@ Usage
     import numpy
     counts = numpy.random.negative_binomial(n = 20, p=0.2, size = (10,8))
     sf = numpy.ones((10,1))
-    c = autoCorrect.correctors.AECorrector().correct(counts = counts, size_factors = sf)
+    corrector = autoCorrect.correctors.AECorrector()
+    c = corrector.correct(counts = counts, size_factors = sf)
     
     #in R:
     library(reticulate)
