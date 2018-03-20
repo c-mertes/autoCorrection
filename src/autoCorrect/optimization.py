@@ -36,7 +36,7 @@ class ParamValues():
 class RunFN():
     def __init__(self, metric, hyper_params, pv,
                  data_path, sep, run_on_mongodb, start_mongodb,
-                 db_name, exp_name, ip, port, max_evals):
+                 db_name, exp_name, ip, port, max_evals, nr_of_workers):
         self.metric = metric
         self.hyper_params = hyper_params
         self.values = pv
@@ -49,7 +49,7 @@ class RunFN():
         self.ip = ip
         self.port = port
         self.max_evals = max_evals
-
+        self.nr_of_workers = nr_of_workers
 
     def __call__(self):
         m_pid=None
@@ -67,14 +67,19 @@ class RunFN():
                     proc_args,
                     cwd=mongodb_path,
                 )
+                #workers_list = []
+                #if self.nr_of_workers > self.max_evals:
+                #       self.nr_of_workers = copy(self.max_evals) 
+                #for p in range(1,self.nr_of_workers):
                 proc_args_worker = ["hyperopt-mongo-worker",
-                                    "--mongo="+str(self.ip)+":"+str(self.port)+"/"+str(self.db_name),
+                                    "--mongo="+str(self.ip)+":"+os.path.join(str(self.port),str(self.db_name)),
                                     "--poll-interval=0.1"]
-
                 mongo_worker_proc = subprocess.Popen(
                     proc_args_worker,
                     env=merge_dicts(os.environ, {"PYTHONPATH": os.getcwd()}),
                 )
+                    #workers_list.append(mongo_worker_proc)
+                    
                 m_pid = mongodb_proc.pid
                 w_pid = mongo_worker_proc.pid
             try:
@@ -125,15 +130,18 @@ class RunFN():
         print("best_parameters: " + str(best))
         print("----------------------------------------------------")
         if self.start_mongodb:
-            os.killpg(os.getpgid(mongo_worker_proc.pid), signal.SIGTERM)
-            os.killpg(os.getpgid(mongodb_proc.pid), signal.SIGTERM)
+            #for proc in workers_list:
+                #proc.kill()
+                #os.kill(proc.pid, signal.SIGKILL)
+            mongo_worker_proc.kill()
+            mongodb_proc.kill()
 
 
 class Optimization():
     def __init__(self, metric="OutlierLoss",
                  data_path=None, sep=" ", run_on_mongodb=False, start_mongodb=False,
                  db_name="corrector", exp_name="exp1", ip="localhost",
-                 port=22334, nr_of_trials=1, only_lr=False, only_epochs=False,
+                 port=22334, nr_of_trials=1, nr_of_workers=1, only_lr=False, only_epochs=False,
                  only_batch=False, only_q=False):
         self.metric = metric
         self.data_path = data_path
@@ -145,6 +153,7 @@ class Optimization():
         self.ip = ip
         self.port = port
         self.nr_of_trials = nr_of_trials
+        self.nr_of_workers = nr_of_workers
         self.only_lr = only_lr
         self.only_epochs = only_epochs
         self.only_batch = only_batch
@@ -203,7 +212,8 @@ class Optimization():
 
         run = RunFN(self.metric, hyper_params, pv,
                     self.data_path, self.sep, self.run_on_mongodb, self.start_mongodb,
-                    self.db_name, self.exp_name, self.ip, self.port, self.nr_of_trials)
+                    self.db_name, self.exp_name, self.ip, self.port, self.nr_of_trials,
+                    self.nr_of_workers)
         run()
 
 
@@ -217,7 +227,8 @@ if __name__ == "__main__":
                              " first row should contain column names, firs column - row names.If not provided, "+
                              "in package included sample data set (GTEX skin tissue) is used for optimization.")
     parser.add_argument('--field_sep', type=str, default=" ", help="Field separator in data file (default: space).")
-    parser.add_argument('--nr_of_trials', type=int, default=1, help="Number of optimization trials (default 300).")
+    parser.add_argument('--nr_of_trials', type=int, default=1, help="Number of optimization trials (default 1).")
+    parser.add_argument('--nr_of_workers', type=int, default=1, help="Number of mongoDB workers (default 1).")
     parser.add_argument('--use_metric', type=str, default="OutlierLoss",
                         help="Available metrics for --use_metric are: 'OutlierLoss'(default), 'OutlierRecall'.")
 
@@ -261,6 +272,6 @@ if __name__ == "__main__":
     opt = Optimization(metric, data_path, sep,
                        run_on_mongodb, start_mongodb,
                        db_name, exp_name, ip, port,
-                       nr_of_trials, only_lr, only_epochs,
+                       nr_of_trials, nr_of_workers, only_lr, only_epochs,
                        only_batch, only_q)
     opt()
