@@ -91,7 +91,7 @@ class RunFN():
             trials = Trials()
         dat = OptimizationData(m_pid, w_pid, self.path, self.sep)
         if self.metric == "OutlierLoss":
-            fn = CompileFN(db_name, exp_name,
+            fn = CompileFN(self.db_name, self.exp_name,
                            data_fn=dat.data,
                            model_fn=optimization_model.model,
                            add_eval_metrics={"outlier_loss": OutlierLoss()},
@@ -102,7 +102,7 @@ class RunFN():
                            save_results=True,  # save the results as .json (in addition to mongoDB)
                            save_dir=DIR_OUT_TRIALS)
         elif self.metric == "OutlierRecall":
-            fn = CompileFN(db_name, exp_name,
+            fn = CompileFN(self.db_name, self.exp_name,
                            data_fn=dat.data,
                            model_fn=optimization_model.model,
                            add_eval_metrics={"outlier_recall": OutlierRecall(theta=25, threshold=1000)},
@@ -113,13 +113,13 @@ class RunFN():
                            save_results=True,  # save the results as .json (in addition to mongoDB)
                            save_dir=DIR_OUT_TRIALS)
         else:
-            raise ValueError("No such metric: " + str(metric) +
+            raise ValueError("No such metric: " + str(self.metric) +
                              " Available metrics for --use_metric are: 'OutlierLoss'(default), 'OutlierRecall'.")
-        best = fmin(fn, hyper_params, trials=trials, algo=tpe.suggest, max_evals=self.max_evals)
+        best = fmin(fn, self.hyper_params, trials=trials, algo=tpe.suggest, max_evals=self.max_evals)
         best['encoding_dim'] = self.values.q[best['encoding_dim']]
         best['batch_size'] = self.values.batch[best['batch_size']]
         best['epochs'] = self.values.epochs[best['epochs']]
-        with open(DIR_OUT_RESULTS+exp_name+"_best.json", 'wt') as f:
+        with open(DIR_OUT_RESULTS+self.exp_name+"_best.json", 'wt') as f:
             json.dump(best, f)
         print("----------------------------------------------------")
         print("best_parameters: " + str(best))
@@ -127,6 +127,84 @@ class RunFN():
         if self.start_mongodb:
             os.killpg(os.getpgid(mongo_worker_proc.pid), signal.SIGTERM)
             os.killpg(os.getpgid(mongodb_proc.pid), signal.SIGTERM)
+
+
+class Optimization():
+    def __init__(self, metric="OutlierLoss",
+                 data_path=None, sep=" ", run_on_mongodb=False, start_mongodb=False,
+                 db_name="corrector", exp_name="exp1", ip="localhost",
+                 port=22334, nr_of_trials=1, only_lr=False, only_epochs=False,
+                 only_batch=False, only_q=False):
+        self.metric = metric
+        self.path = data_path
+        self.sep = sep
+        self.run_on_mongodb = run_on_mongodb
+        self.start_mongodb = start_mongodb
+        self.db_name = db_name
+        self.exp_name = exp_name
+        self.ip = ip
+        self.port = port
+        self.nr_of_trials = nr_of_trials
+        self.only_lr = only_lr
+        self.only_epochs = only_epochs
+        self.only_batch = only_batch
+        self.only_q = only_q
+
+    def __call__(self):
+        print_exp(exp_name)
+        if only_q:
+            pv = ParamValues(
+                lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
+                q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
+                epochs=(250,),
+                batch=(32,)
+            )
+        elif only_batch:
+            pv = ParamValues(
+                lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
+                q=(23,),
+                epochs=(250,),
+                batch=(16, 32, 50, 100, 128, 200)
+            )
+        elif only_epochs:
+            pv = ParamValues(
+                lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
+                q=(23,),
+                epochs=(100, 120, 150, 170, 200, 250, 300, 400, 500),
+                batch=(32,)
+            )
+        elif only_lr:
+            pv = ParamValues(
+                lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
+                q=(23,),
+                epochs=(250,),
+                batch=(32,)
+            )
+        else:
+            pv = ParamValues(
+                lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
+                q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
+                epochs=(100, 120, 150, 170, 200, 250, 300, 400, 500),
+                batch=(16, 32, 50, 100, 128, 200)
+            )
+
+        hyper_params = {
+            "data": {
+            },
+            "model": {
+                "lr": pv.lr,
+                "encoding_dim": hp.choice("encoding_dim", pv.q),  ##
+            },
+            "fit": {
+                "epochs": hp.choice("epochs", pv.epochs),  #
+                "batch_size": hp.choice("batch_size", pv.batch)
+            }
+        }
+
+        run = RunFN(metric, hyper_params, pv,
+                    data_path, sep, run_on_mongodb, start_mongodb,
+                    db_name, exp_name, ip, port, nr_of_trials)
+        run()
 
 
 if __name__ == "__main__":
@@ -162,11 +240,12 @@ if __name__ == "__main__":
     parser.add_argument('--optimize_only_lr', action='store_true', help="Flag to optimize only learning rate.")
 
     args = parser.parse_args()
-    run_test = not args.notest
     data_path = args.data_path
     sep = args.field_sep
     metric = args.use_metric
     nr_of_trials = args.nr_of_trials
+    if not args.notest:
+        nr_of_trials = 1
     run_on_mongodb = args.run_on_mongodb
     start_mongodb = args.start_mongodb
     db_name = args.db_name
@@ -178,60 +257,10 @@ if __name__ == "__main__":
     only_epochs = args.optimize_only_epochs
     only_lr = args.optimize_only_lr
 
-    print_exp(exp_name)
 
-
-    if only_q:
-        pv = ParamValues(
-            lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
-            q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
-            epochs=(250,),
-            batch=(32,)
-        )
-    elif only_batch:
-         pv = ParamValues(
-            lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
-            q=(23,),
-            epochs=(250,),
-            batch=(16, 32, 50, 100, 128, 200)
-        )
-    elif only_epochs:
-        pv = ParamValues(
-            lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-4)),
-            q=(23,),
-            epochs=(100, 120, 150, 170, 200, 250, 300, 400, 500),
-            batch=(32,)
-        )
-    elif only_lr:
-        pv = ParamValues(
-            lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
-            q=(23,),
-            epochs=(250,),
-            batch=(32,)
-        )
-    else:
-        pv = ParamValues(
-            lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
-            q = (18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
-            epochs = (100, 120, 150, 170, 200, 250, 300, 400, 500),
-            batch = (16, 32, 50, 100, 128, 200)
-            )
-
-
-    hyper_params = {
-        "data": {
-        },
-        "model": {
-            "lr": pv.lr,
-            "encoding_dim": hp.choice("encoding_dim", pv.q), ##
-        },
-        "fit": {
-            "epochs": hp.choice("epochs", pv.epochs), #
-            "batch_size": hp.choice("batch_size", pv.batch)
-        }
-    }
-
-    run = RunFN(metric, hyper_params, pv,
-                data_path, sep, run_on_mongodb, start_mongodb,
-                db_name, exp_name, ip, port, nr_of_trials)
-    run()
+    opt = Optimization(metric, data_path, sep,
+                       run_on_mongodb, start_mongodb,
+                       db_name, exp_name, ip, port,
+                       nr_of_trials, only_lr, only_epochs,
+                       only_batch, only_q)
+    opt()
