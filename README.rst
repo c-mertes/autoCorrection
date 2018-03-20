@@ -54,7 +54,7 @@ Together with the autoCorrect package you will get
 
 packages automatically installed, if not present.
 
-If you don't wannt to install these packages globally, please use vitual environment.
+If you don't wannt to install these packages globally, please use virtual environment.
 
 If you have problems with virtualenv, installing using conda may help: 
 
