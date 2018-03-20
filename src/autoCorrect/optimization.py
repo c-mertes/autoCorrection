@@ -7,7 +7,7 @@ import signal
 from .optimization_data import OptimizationData
 from .optimization_model import OptimizationModel
 import argparse
-from hyopt import *
+from .hyopt import *
 from .optimization_metrics import *
 import json
 import tempfile
