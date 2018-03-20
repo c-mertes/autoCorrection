@@ -48,8 +48,25 @@ Overview
 
 * Free software: MIT license
 
-Install tensorflow 
+Activate virtual environment 
 ==================
+Together with the autoCorrect package you will get 
+
+        'tensorflow',
+        'toolz',
+        'keras',
+        'numpy',
+        'kopt',
+        'scipy',
+        'h5py',
+        'sklearn',
+        'dask',
+        'pandas',
+        'matplotlib'
+
+packages automatically installed, if not present.
+
+If you don't wannt to install these packages globally, please use vitual environment.
 
 If you have problems with virtualenv, installing using conda may help: 
 
@@ -59,17 +76,14 @@ If you have problems with virtualenv, installing using conda may help:
     
     conda install virtualenv
 
-Create virual environment with a name you like (here env-with-tensorflow)
+Create virual environment with a name you like (here env-with-autoCorrect)
 
-    virtualenv env-with-tensorflow
+    virtualenv env-with-autoCorrect
     
 Activate the environment
 
-    source env-with-tensorflow/bin/activate
+    source env-with-autoCorrect/bin/activate
 
-Install packages 
-
-    pip install tensorflow
 
 
 
