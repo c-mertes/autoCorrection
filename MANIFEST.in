@@ -2,6 +2,7 @@
 graft src
 graft tests
 graft data
+graft saved_models
 
 include .bumpversion.cfg
 include .coveragerc

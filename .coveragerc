@@ -1,12 +1,12 @@
 [paths]
 source =
-   src/autonorm
-   */site-packages/autonorm
+   src/autoCorrect
+   */site-packages/autoCorrect
 
 [run]
 branch = true
 source =
-    autonorm
+    autoCorrect
     tests
 parallel = true
 
