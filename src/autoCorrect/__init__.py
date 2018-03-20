@@ -5,3 +5,4 @@ from . import layers
 from . import autoencoder
 from . import data_utils
 from . import correctors
+from . import optimization
