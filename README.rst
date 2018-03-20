@@ -80,7 +80,7 @@ Package Installation
 
 ::
 
-    pip install autCorrect
+    pip install autoCorrect
 
 
 Deactivate virtual environment
