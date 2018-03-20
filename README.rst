@@ -8,18 +8,9 @@ Overview
     :stub-columns: 1
 
     * - package
-      - | |version| |wheel| |supported-versions| |supported-implementations|
+      - | |version| |wheel| |supported-versions|
         | |commits-since|
 
-
-
-.. |requires| image:: https://requires.io/github/matusevi/autonorm/requirements.svg?branch=master
-    :alt: Requirements Status
-    :target: https://requires.io/github/matusevi/autonorm/requirements/?branch=master
-
-.. |codecov| image:: https://codecov.io/github/matusevi/autonorm/coverage.svg?branch=master
-    :alt: Coverage Status
-    :target: https://codecov.io/github/matusevi/autonorm
 
 .. |version| image:: https://img.shields.io/pypi/v/autonorm.svg
     :alt: PyPI Package latest release
@@ -31,20 +22,17 @@ Overview
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/autonorm.svg
     :alt: PyPI Wheel
-    :target: https://pypi.python.org/pypi/autonorm
+    :target: https://pypi.python.org/pypi/autoCorrect
 
 .. |supported-versions| image:: https://img.shields.io/pypi/pyversions/autonorm.svg
     :alt: Supported versions
-    :target: https://pypi.python.org/pypi/autonorm
+    :target: https://pypi.python.org/pypi/autoCorrect
 
-.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/autonorm.svg
-    :alt: Supported implementations
-    :target: https://pypi.python.org/pypi/autonorm
 
 
 .. end-badges
 
-...
+
 
 * Free software: MIT license
 
@@ -125,26 +113,4 @@ Documentation
 
 https://i12g-gagneurweb.in.tum.de/public/docs/autocorrect/
 
-Development
-===========
 
-To run the all tests run::
-
-    tox
-
-Note, to combine the coverage data from all the tox environments run:
-
-.. list-table::
-    :widths: 10 90
-    :stub-columns: 1
-
-    - - Windows
-      - ::
-
-            set PYTEST_ADDOPTS=--cov-append
-            tox
-
-    - - Other
-      - ::
-
-            PYTEST_ADDOPTS=--cov-append tox
