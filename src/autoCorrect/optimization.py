@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
 from hyperopt import fmin, tpe, hp, Trials
-import numpy as np
 import os
 import sys
 import signal
-from optimization_data import OptimizationData
-import optimization_model
+from .optimization_data import OptimizationData
+import .optimization_model
 import argparse
 from hyopt import *
-from metrics import *
+from .optimization_metrics import *
 import json
 import tempfile
 import subprocess
