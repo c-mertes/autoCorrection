@@ -1,7 +1,7 @@
 variables:
   PKGNAME:     "autoCorrect"
   PyVER:       "3-5.0.1"
-  
+
 before_script:
   - module load "i12g/anaconda/$PyVER"
   - virtualenv $PKGNAME
@@ -9,7 +9,7 @@ before_script:
   - pip install .
   - pip install tensorflow
   - pip install cytoolz
-  
+
 main-test:
   tags: [shell]
   script:
