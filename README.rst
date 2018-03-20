@@ -109,9 +109,9 @@ Usage
     #in python:
     python
     import autoCorrect
-    import numpy
-    counts = numpy.random.negative_binomial(n = 20, p=0.2, size = (10,8))
-    sf = numpy.ones((10,1))
+    import numpy as np
+    counts = np.random.negative_binomial(n = 20, p=0.2, size = (10,8))
+    sf = np.ones((10,8))
     corrector = autoCorrect.correctors.AECorrector()
     c = corrector.correct(counts = counts, size_factors = sf)
     
