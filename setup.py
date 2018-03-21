@@ -24,7 +24,7 @@ def read(*names, **kwargs):
 
 
 setup(
-    name='autoCorrect',
+    name='autoCorrection',
     version='1.0.0',
     license='MIT license',
     description='...',
@@ -34,7 +34,7 @@ setup(
     ),
     author='Agne Matuseviciute',
     author_email='agne.matuseviciute@tum.de',
-    url='https://github.com/matusevi/autonorm',
+    url='https://github.com/matuseviciute/autoCorrect',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
