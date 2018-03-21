@@ -8,7 +8,7 @@ Overview
     :stub-columns: 1
 
     * - package
-      - | |version| |wheel| 
+      - | |version| |wheel|
 
 
 .. |version| image:: https://img.shields.io/pypi/v/autoCorrection.svg
