@@ -58,14 +58,12 @@ setup(
     ],
     install_requires=[
         'tensorflow',
-        'toolz',
         'keras',
+        'h5py==2.8.0rc1',
         'numpy',
         'kopt',
         'scipy',
-        'h5py',
         'sklearn',
-        'dask',
         'pandas',
         'matplotlib',
         'statsmodels'

@@ -8,8 +8,8 @@ import numpy as np
 import json
 import os
 dir, filename = os.path.split(__file__)
-MODEL_PATH = os.path.join(dir,"..","..","saved_models")
-OPT_PARAM_PATH = os.path.join(dir,"..","..","saved_models", "best")
+MODEL_PATH = os.path.join(dir, "saved_models")
+OPT_PARAM_PATH = os.path.join(dir, "saved_models", "best")
 
 class Corrector():
     @abstractmethod

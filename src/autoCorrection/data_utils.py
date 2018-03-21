@@ -1,7 +1,6 @@
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
-import dask.array as da
 import scipy as sp
 from copy import deepcopy
 import matplotlib as mpl
@@ -16,39 +15,7 @@ class OutlierData():
         self.data_with_outliers = data_with_outliers
 
 
-class SaveToFile():
-    def __init__(self, input_data,
-                 counts_file="outlier_counts",
-                 sample_names=None, gene_names=None):
-        self.input_data = input_data
-        self.counts_file = counts_file
-        self.sample_names = sample_names
-        self.gene_names = gene_names
-
-    def write_in_h5(self):
-        x = da.from_array(self.outlier_data.data_with_outliers.astype(int),
-                          chunks=(self.outlier_data.data_with_outliers.shape[0],
-                                  self.outlier_data.data_with_outliers.shape[1]))
-        y = da.from_array(self.outlier_data.index.astype(int),
-                          chunks=(self.outlier_data.index.shape[0],
-                                  self.outlier_data.index.shape[1]))
-        da.to_hdf5(self.counts_file+'.h5', {'/counts': x,
-                                   '/idx': y})
-
-    def write_in_csv_with_names(self):
-        counts = pd.DataFrame(self.outlier_data.data_with_outliers.astype(int),
-                          index=self.sample_names, columns=self.gene_names)
-        counts.to_csv(self.counts_file+".csv", index=True, header=True, sep='\t')
-        idx = pd.DataFrame(self.outlier_data.index.astype(int),
-                          index=self.sample_names, columns=self.gene_names)
-        idx.to_csv(self.counts_file+"_outlier_idx.csv", index=True, header=True, sep='\t')
-
-
-    def write_counts_in_csv(self):
-        np.savetxt(self.counts_file+".csv", self.outlier_data.data_with_outliers.astype(int), delimiter=',')
-
-
-class OutInjectionFC(SaveToFile):
+class OutInjectionFC():
     def __init__(self, input_data, outlier_prob=10.0**-3,
                  fold=None, sample_names=None, gene_names=None,
                  counts_file = "out_file"):
@@ -210,22 +177,22 @@ class DataReader():
         pass
 
     def read_gtex_blood(self):
-        path = os.path.join(DIR, "..", "..", "data", "whole_blood_gtex.tsv")
+        path = os.path.join(DIR,"data", "whole_blood_gtex.tsv")
         self.data = self.read_data(path, sep="\t")
         return self.data
 
     def read_gtex_skin(self):
-        path = os.path.join(DIR, "..", "..", "data", "skin_gtex.tsv")
+        path = os.path.join(DIR, "data", "skin_gtex.tsv")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_skin_small(self):
-        path = os.path.join(DIR, "..", "..", "data", "skin_small.tsv")
+        path = os.path.join(DIR, "data", "skin_small.tsv")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_gtex_several_tissues(self):
-        path=os.path.join(DIR, "..", "..", "data", "wbl_br1_br2_bst_hrt_skn.tsv")
+        path=os.path.join(DIR, "data", "wbl_br1_br2_bst_hrt_skn.tsv")
         self.data = self.read_data(path, sep="\t")
         return self.data
 

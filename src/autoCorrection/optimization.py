@@ -17,8 +17,8 @@ def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
 
 DIR_ROOT, filename = os.path.split(__file__)
-DIR_OUT_TRIALS = os.path.join(DIR_ROOT,"..","..","trials")
-DIR_OUT_RESULTS = os.path.join(DIR_ROOT,"..","..","saved_models", "best")
+DIR_OUT_TRIALS = os.path.join(DIR_ROOT, "trials")
+DIR_OUT_RESULTS = os.path.join(DIR_ROOT, "saved_models", "best")
 os.makedirs(DIR_OUT_RESULTS, exist_ok=True)
 
 KILL_TIMEOUT = 60 * 80
