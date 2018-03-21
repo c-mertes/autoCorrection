@@ -4,6 +4,8 @@ import pandas as pd
 import dask.array as da
 import scipy as sp
 from copy import deepcopy
+import matplotlib as mpl
+mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 import os
 DIR, filename = os.path.split(__file__)
