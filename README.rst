@@ -63,15 +63,19 @@ If you have problems with virtualenv, installing using conda may help:
 Make sure you are using python 3.
 
     conda create -n mypyth3 python=3.6
+    
     source activate mypyth3
+    
     conda install virtualenv
 
 activate new environment in active python 3 environment:
 
     virtualenv env-with-autoCorrect
+    
     source env-with-autoCorrect/bin/activate
     
 Check if you are still using python 3:
+
     python --version
 
 
