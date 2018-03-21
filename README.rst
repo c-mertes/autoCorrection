@@ -8,25 +8,18 @@ Overview
     :stub-columns: 1
 
     * - package
-      - | |version| |wheel| |supported-versions|
-        | |commits-since|
+      - | |version| |wheel| 
 
 
-.. |version| image:: https://img.shields.io/pypi/v/autonorm.svg
+.. |version| image:: https://img.shields.io/pypi/v/autoCorrection.svg
     :alt: PyPI Package latest release
-    :target: https://pypi.python.org/pypi/autonorm
+    :target: https://pypi.python.org/pypi/autoCorrection
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/matusevi/autonorm/v1.0.0.svg
-    :alt: Commits since latest release
-    :target: https://github.com/matusevi/autonorm/compare/v1.0.0...master
 
-.. |wheel| image:: https://img.shields.io/pypi/wheel/autonorm.svg
+.. |wheel| image:: https://img.shields.io/pypi/wheel/autoCorrection.svg
     :alt: PyPI Wheel
-    :target: https://pypi.python.org/pypi/autoCorrect
+    :target: https://pypi.python.org/pypi/autoCorrection
 
-.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/autonorm.svg
-    :alt: Supported versions
-    :target: https://pypi.python.org/pypi/autoCorrect
 
 
 
@@ -38,7 +31,7 @@ Overview
 
 Activate virtual environment
 ==================
-Together with the autoCorrect package you will get
+Together with the autoCorrection package you will get
 
         'tensorflow',
         'toolz',
@@ -51,6 +44,7 @@ Together with the autoCorrect package you will get
         'dask',
         'pandas',
         'matplotlib'
+        'statsmodels'
 
 packages automatically installed, if not present.
 
@@ -63,17 +57,17 @@ If you have problems with virtualenv, installing using conda may help:
 Make sure you are using python 3.
 
     conda create -n mypyth3 python=3.6
-    
+
     source activate mypyth3
-    
+
     conda install virtualenv
 
 activate new environment in active python 3 environment:
 
-    virtualenv env-with-autoCorrect
-    
-    source env-with-autoCorrect/bin/activate
-    
+    virtualenv env-with-autoCorrection
+
+    source env-with-autoCorrection/bin/activate
+
 Check if you are still using python 3:
 
     python --version
@@ -84,7 +78,7 @@ Package Installation
 
 ::
 
-    ...
+    pip install autoCorrection
 
 
 Deactivate virtual environment
@@ -101,17 +95,17 @@ Usage
 
     #in python:
     python
-    import autoCorrect
+    import autoCorrection
     import numpy as np
     counts = np.random.negative_binomial(n = 20, p=0.2, size = (10,8))
     sf = np.ones((10,8))
-    corrector = autoCorrect.correctors.AECorrector()
+    corrector = autoCorrection.correctors.AECorrector()
     c = corrector.correct(counts = counts, size_factors = sf)
 
     #in R:
     library(reticulate)
-    autoCorrect <- import("autoCorrect")
-    corrected <- autoCorrect$correctors$AECorrector(model_name, model_directory)$correct(COUNTS, SIZE_FACTORS, only_predict=FALSE)
+    autoCorrection <- import("autoCorrection")
+    corrected <- autoCorrection$correctors$AECorrector(model_name, model_directory)$correct(COUNTS, SIZE_FACTORS, only_predict=FALSE)
 
 Documentation
 =============

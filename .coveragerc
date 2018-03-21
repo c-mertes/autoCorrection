@@ -1,12 +1,12 @@
 [paths]
 source =
-   src/autoCorrect
-   */site-packages/autoCorrect
+   src/autoCorrection
+   */site-packages/autoCorrection
 
 [run]
 branch = true
 source =
-    autoCorrect
+    autoCorrection
     tests
 parallel = true
 
