@@ -60,19 +60,19 @@ If you have problems with virtualenv, installing using conda may help:
 
 (Installation of conda: https://conda.io/docs/user-guide/install/index.html)
 
-    pip uninstall virtualenv
+Make sure you are using python 3.
 
+    conda create -n mypyth3 python=3.6
+    source activate mypyth3
     conda install virtualenv
 
-Create virual environment with a name you like (here env-with-autoCorrect)
+activate new environment in active python 3 environment:
 
     virtualenv env-with-autoCorrect
-
-Activate the environment
-
     source env-with-autoCorrect/bin/activate
-
-
+    
+Check if you are still using python 3:
+    python --version
 
 
 Package Installation
@@ -80,7 +80,7 @@ Package Installation
 
 ::
 
-    pip install autoCorrect
+    ...
 
 
 Deactivate virtual environment
