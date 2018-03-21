@@ -68,5 +68,6 @@ setup(
         'dask',
         'pandas',
         'matplotlib',
+        'statsmodels'
     ],
 )
