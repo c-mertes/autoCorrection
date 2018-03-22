@@ -57,15 +57,17 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     install_requires=[
-        'tensorflow',
-        'keras',
+        'dask'
         'h5py==2.8.0rc1',
-        'numpy',
+        'keras',
         'kopt',
+        'matplotlib',
+        'numpy',
+        'pandas',
         'scipy',
         'sklearn',
-        'pandas',
-        'matplotlib',
         'statsmodels'
+        'tensorflow',
+        'toolz'
     ],
 )
