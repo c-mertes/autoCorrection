@@ -3,9 +3,6 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 from copy import deepcopy
-import matplotlib as mpl
-mpl.use('TkAgg')
-import matplotlib.pyplot as plt
 import os
 DIR, filename = os.path.split(__file__)
 
@@ -114,6 +111,7 @@ class TrainTestPreparation():
     def clip_high_values(self):
         cliped_data = deepcopy(self.data)
         cliped_data[cliped_data > 200000] = 200000
+        cliped_data = cliped_data + 0.001
         return cliped_data
 
     def get_median_factor(self, data, axis=None):
@@ -309,23 +307,7 @@ class Evaluation():
         rho, p = sp.stats.spearmanr(data, axis=1)
         return rho
 
-    def plot_correlations_of_samples(self):
-        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
-        plt.suptitle('Correlation of samples', fontsize=24)
-        axs[0].set_title("Before correction", fontsize=22)
-        axs[0].tick_params(labelsize=15)
-        p = axs[0].hist(self.orig_data_rho, bins=20)
-        axs[0].set_ylabel('Frequency')
-        axs[0].set_xlabel('Spearmann correlation coefficient')
-        axs[0].xaxis.label.set_size(18)
-        axs[0].yaxis.label.set_size(18)
-        axs[1].set_title("After correction", fontsize=22)
-        axs[1].tick_params(labelsize=15)
-        p = axs[1].hist(self.corrected_data_rho, bins=20)
-        axs[1].set_ylabel('Frequency')
-        axs[1].set_xlabel('Spearmann correlation coefficient')
-        axs[1].xaxis.label.set_size(18)
-        axs[1].yaxis.label.set_size(18)
+
 
 
 

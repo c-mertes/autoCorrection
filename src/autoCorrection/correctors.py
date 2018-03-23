@@ -9,7 +9,10 @@ import json
 import os
 dir, filename = os.path.split(__file__)
 MODEL_PATH = os.path.join(dir, "saved_models")
+os.makedirs(MODEL_PATH, exist_ok=True)
 OPT_PARAM_PATH = os.path.join(dir, "saved_models", "best")
+os.makedirs(OPT_PARAM_PATH, exist_ok=True)
+
 
 class Corrector():
     @abstractmethod
@@ -26,13 +29,19 @@ class DummyCorrector(Corrector):
 
 
 class AECorrector(Corrector):
-    def __init__(self, model_name="model", model_directory=MODEL_PATH, verbose=1,
+    def __init__(self, model_name=None, model_directory=None, verbose=1,
                  param_path=OPT_PARAM_PATH, param_exp_name=None, denoisingAE=True,
                  save_model=True, epochs=250, encoding_dim=23, lr=0.00068, batch_size=None):
         self.denoisingAE = denoisingAE
         self.save_model = save_model
-        self.model_name = model_name
-        self.directory = model_directory
+        if model_name is None:
+            self.model_name = "model"
+        else:
+            self.model_name = model_name
+        if model_directory is None:
+            self.directory = MODEL_PATH
+        else:
+            self.directory = model_directory
         self.verbose = verbose
         if param_exp_name is not None:
             path = os.path.join(param_path,param_exp_name+"_best.json")
@@ -51,11 +60,12 @@ class AECorrector(Corrector):
         if len(counts.shape) == 1:
             counts = counts.reshape(1,counts.shape[0])
             size_factors = size_factors.reshape(1,size_factors.shape[0])
-        if size_factors is not None and counts.shape != size_factors.shape:
-            raise ValueError("Size factors and counts must have equal dimensions."+
+        if size_factors is not None and counts.shape[0] != size_factors.shape[0]:
+            raise ValueError("Size factors and counts must have equal number of samples"+
                              "\nNow counts shape:"+str(counts.shape)+ \
                             "\nSize factors shape:"+str(size_factors.shape))
-        if not os.path.isfile(os.path.join(self.directory,self.model_name+'.json')) and only_predict:
+        model_file = os.path.join(self.directory,self.model_name+'.h5')
+        if not os.path.isfile(model_file) and only_predict:
             raise ValueError("There is no model "+str(os.path.join(self.directory,self.model_name+'.json'))+
                   "' saved. Only predict is not possible!")
         self.loader = DataCooker(counts, size_factors,
@@ -74,20 +84,23 @@ class AECorrector(Corrector):
                                 validation_data=(self.data[1][0], self.data[1][1]),
                                 verbose=self.verbose
                                )
-            if self.save_model:
-                model_json = self.ae.model.to_json()
-                with open(os.path.join(self.directory,self.model_name+'.json'), "w") as json_file:
-                    json_file.write(model_json)
-                self.ae.model.save_weights(os.path.join(self.directory,self.model_name+'_weights.h5'))
-                print("Model saved on disk!")
             model = self.ae.model
+            if self.save_model:
+                os.makedirs(self.directory, exist_ok=True)
+
+                model_json = self.ae.model.to_json()
+                with open(os.path.join(self.directory, self.model_name + '.json'), "w") as json_file:
+                    json_file.write(model_json)
+                self.ae.model.save_weights(os.path.join(self.directory, self.model_name + '_weights.h5'))
+                print("Model saved on disk!")
+
         else:
-            json_file = open(os.path.join(self.directory,self.model_name+'.json'), 'r')
+            json_file = open(os.path.join(self.directory, self.model_name + '.json'), 'r')
             loaded_model_json = json_file.read()
             json_file.close()
             model = model_from_json(loaded_model_json,
-                    custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
-            model.load_weights(os.path.join(self.directory,self.model_name+'_weights.h5'))
+                                    custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
+            model.load_weights(os.path.join(self.directory, self.model_name + '_weights.h5'))
             print("Model loaded from disk!")
         self.corrected = model.predict(self.data[2][0])
         return self.corrected
