@@ -64,9 +64,10 @@ class AECorrector(Corrector):
             raise ValueError("Size factors and counts must have equal number of samples"+
                              "\nNow counts shape:"+str(counts.shape)+ \
                             "\nSize factors shape:"+str(size_factors.shape))
-        model_file = os.path.join(self.directory, self.model_name + '_weights.h5')
-        if not os.path.isfile(model_file) and only_predict:
-            raise ValueError("There is no model "+str(os.path.join(self.directory,self.model_name+'.json'))+
+        model_file = os.path.join(self.directory, self.model_name + '.json')
+        weights_file = os.path.join(self.directory, self.model_name + '_weights.h5')
+        if (not (os.path.isfile(model_file) or os.path.isfile(weights_file))) and only_predict:
+            raise ValueError("There is no model "+str(model_file)+" or no weigthts "+str(weights_file)+
                   "' saved. Only predict is not possible!")
         self.loader = DataCooker(counts, size_factors,
                                  inject_outliers=self.denoisingAE,
@@ -89,18 +90,18 @@ class AECorrector(Corrector):
                 os.makedirs(self.directory, exist_ok=True)
 
                 model_json = self.ae.model.to_json()
-                with open(os.path.join(self.directory, self.model_name + '.json'), "w") as json_file:
+                with open(model_file, "w") as json_file:
                     json_file.write(model_json)
-                self.ae.model.save_weights(os.path.join(self.directory, self.model_name + '_weights.h5'))
+                self.ae.model.save_weights(weights_file)
                 print("Model saved on disk!")
 
         else:
-            json_file = open(os.path.join(self.directory, self.model_name + '.json'), 'r')
+            json_file = open(model_file, 'r')
             loaded_model_json = json_file.read()
             json_file.close()
             model = model_from_json(loaded_model_json,
-                                    custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
-            model.load_weights(os.path.join(self.directory, self.model_name + '_weights.h5'))
+            custom_objects={'ConstantDispersionLayer': ConstantDispersionLayer})
+            model.load_weights(weights_file)
             print("Model loaded from disk!")
         self.corrected = model.predict(self.data[2][0])
         return self.corrected

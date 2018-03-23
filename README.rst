@@ -34,17 +34,15 @@ Activate virtual environment
 Together with the autoCorrection package you will get
 
         'tensorflow',
-        'toolz',
         'keras',
         'numpy',
         'kopt',
         'scipy',
         'h5py',
         'sklearn',
-        'dask',
         'pandas',
-        'matplotlib'
-        'statsmodels'
+        'statsmodels',
+        'pytest'
 
 packages automatically installed, if not present.
 
