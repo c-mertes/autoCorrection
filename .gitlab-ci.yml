@@ -11,4 +11,4 @@ before_script:
 main-test:
   tags: [shell]
   script:
-    - python -m unittest discover
+    - pytest

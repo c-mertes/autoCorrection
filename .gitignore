@@ -32,6 +32,9 @@ pip-log.txt
 nosetests.xml
 coverage.xml
 htmlcov
+.pytest_cache/
+test1.json
+test1_weights.h5
 
 # Translations
 *.mo
