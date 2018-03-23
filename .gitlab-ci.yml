@@ -4,11 +4,9 @@ variables:
 
 before_script:
   - module load "i12g/anaconda/$PyVER"
-  - virtualenv $PKGNAME
-  - source ./$PKGNAME/bin/activate
-  - pip install .
-  - pip install tensorflow
-  - pip install cytoolz
+  - virtualenv venv-$PKGNAME
+  - source venv-$PKGNAME/bin/activate
+  - pip install --upgrade .
 
 main-test:
   tags: [shell]
