@@ -64,7 +64,7 @@ class AECorrector(Corrector):
             raise ValueError("Size factors and counts must have equal number of samples"+
                              "\nNow counts shape:"+str(counts.shape)+ \
                             "\nSize factors shape:"+str(size_factors.shape))
-        model_file = os.path.join(self.directory,self.model_name+'.h5')
+        model_file = os.path.join(self.directory, self.model_name + '_weights.h5')
         if not os.path.isfile(model_file) and only_predict:
             raise ValueError("There is no model "+str(os.path.join(self.directory,self.model_name+'.json'))+
                   "' saved. Only predict is not possible!")
