@@ -8,7 +8,7 @@ Overview
     :stub-columns: 1
 
     * - package
-      - | |version| |wheel|
+      - | |Version| |Build| |Wheel| |License|
 
 
 .. |version| image:: https://img.shields.io/pypi/v/autoCorrection.svg
@@ -16,11 +16,18 @@ Overview
     :target: https://pypi.python.org/pypi/autoCorrection
 
 
+.. |Build| image::  https://travis-ci.org/gagneurlab/autoCorrect.svg?branch=master
+    :alt: Build status
+    :target: https://travis-ci.org/gagneurlab/autoCorrect
+
+
 .. |wheel| image:: https://img.shields.io/pypi/wheel/autoCorrection.svg
     :alt: PyPI Wheel
     :target: https://pypi.python.org/pypi/autoCorrection
 
-
+.. |License| image:: https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000
+    :alt: License MIT
+    :target: https://github.com/gagneurlab/autoCorrect/blob/master/LICENSE
 
 
 .. end-badges

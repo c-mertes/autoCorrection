@@ -1,43 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
 
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-.eggs
-parts
-bin
-var
-sdist
-wheelhouse
-develop-eggs
-.installed.cfg
-lib
-lib64
-venv*/
+# Distribution / packaging
+.Python
+env/
+build/
+dist/
+downloads/
+eggs/
+*[-.]eggs*/
+lib/
+lib64/
+parts/
 pyvenv*/
+sdist/
+var/
+venv*/
+wheelhouse/
+wheels/
+.installed.cfg
+*.manifest
+*.spec
+target
 
 # Installer logs
 pip-log.txt
+pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-.coverage
 .tox
-.coverage.*
+.coverage*
 nosetests.xml
 coverage.xml
 htmlcov
 .pytest_cache/
 test1.json
 test1_weights.h5
+.cache
+nosetests.xml
+*.cover
+.hypothesis/
 
 # Translations
 *.mo
+*.pot
 
 # Mr Developer
 .mr.developer.cfg
