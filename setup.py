@@ -34,7 +34,7 @@ setup(
     ),
     author='Agne Matuseviciute',
     author_email='agne.matuseviciute@tum.de',
-    url='https://github.com/matuseviciute/autoCorrect',
+    url='https://github.com/matuseviciute/autoCorrection',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -66,6 +66,6 @@ setup(
         'sklearn',
         'pandas',
         'statsmodels',
-	'pytest'
+	    'pytest'
     ],
 )

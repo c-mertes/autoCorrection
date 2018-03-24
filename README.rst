@@ -108,6 +108,6 @@ Usage
 Documentation
 =============
 
-https://i12g-gagneurweb.in.tum.de/public/docs/autocorrect/
+https://i12g-gagneurweb.in.tum.de/public/docs/autocorrection/
 
 

@@ -176,21 +176,29 @@ class DataReader():
 
     def read_gtex_blood(self):
         path = os.path.join(DIR,"data", "whole_blood_gtex.tsv")
+        if not os.path.isfile(path):
+            raise ValueError("The file " + str(path) + " does not exist.")
         self.data = self.read_data(path, sep="\t")
         return self.data
 
     def read_gtex_skin(self):
         path = os.path.join(DIR, "data", "skin_gtex.tsv")
+        if not os.path.isfile(path):
+            raise ValueError("The file " + str(path) + " does not exist.")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_skin_small(self):
         path = os.path.join(DIR, "data", "skin_small.tsv")
+        if not os.path.isfile(path):
+            raise ValueError("The file " + str(path) + " does not exist.")
         self.data = self.read_data(path, sep=" ")
         return self.data
 
     def read_gtex_several_tissues(self):
         path=os.path.join(DIR, "data", "wbl_br1_br2_bst_hrt_skn.tsv")
+        if not os.path.isfile(path):
+            raise ValueError("The file " + str(path) + " does not exist.")
         self.data = self.read_data(path, sep="\t")
         return self.data
 
