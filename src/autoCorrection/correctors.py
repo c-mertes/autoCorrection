@@ -31,9 +31,15 @@ class DummyCorrector(Corrector):
 class AECorrector(Corrector):
     def __init__(self, model_name=None, model_directory=None, verbose=1,
                  param_path=OPT_PARAM_PATH, param_exp_name=None, denoisingAE=True,
-                 save_model=True, epochs=250, encoding_dim=23, lr=0.00068, batch_size=None):
+                 save_model=True, epochs=None, encoding_dim=None, lr=None, batch_size=None):
         self.denoisingAE = denoisingAE
         self.save_model = save_model
+        if epochs is None:
+            epochs = 250
+        if encoding_dim is None:
+            encoding_dim = 23
+        if lr is None:
+            lr = 0.00068
         if model_name is None:
             self.model_name = "model"
         else:

@@ -13,7 +13,7 @@ build/
 dist/
 downloads/
 eggs/
-*[-.]eggs*/
+*[-.]egg*/
 lib/
 lib64/
 parts/
