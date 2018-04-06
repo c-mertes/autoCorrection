@@ -61,6 +61,7 @@ setup(
         'tensorflow',
         'keras',
         'h5py==2.8.0rc1',
+        'networkx==1.11',
         'numpy',
         'kopt',
         'scipy',
