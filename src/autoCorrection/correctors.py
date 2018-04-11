@@ -32,15 +32,10 @@ class AECorrector(Corrector):
     def __init__(self, model_name=None, model_directory=None, verbose=1,
                  param_path=OPT_PARAM_PATH, param_exp_name=None, denoisingAE=True,
                  save_model=True, epochs=250, encoding_dim=23, lr=0.00068, batch_size=None,
-                 set_seed=True, seed=1234):
+                 seed = None):
         self.denoisingAE = denoisingAE
         self.save_model = save_model
-        if set_seed:
-            self.shuffle = False
-            self.seed = seed
-        else:
-            self.shuffle = True
-            self.seed = None
+        self.seed = seed
         if model_name is None:
             self.model_name = "model"
         else:
@@ -86,12 +81,10 @@ class AECorrector(Corrector):
                                   size=counts.shape[1], seed=self.seed)
             self.ae.model.compile(optimizer=Adam(lr=self.lr), loss=self.ae.loss)
             self.ae.model.fit(self.data[0][0], self.data[0][1],
-                                epochs=self.epochs,
-                                batch_size=self.batch_size,
-                                shuffle=self.shuffle,
-                                validation_data=(self.data[1][0], self.data[1][1]),
-                                verbose=self.verbose
-                               )
+                              epochs=self.epochs, batch_size=self.batch_size,
+                              shuffle = False if self.seed is not None else True,
+                              validation_data=(self.data[1][0], self.data[1][1]),
+                              verbose=self.verbose)
             model = self.ae.model
             if self.save_model:
                 os.makedirs(self.directory, exist_ok=True)

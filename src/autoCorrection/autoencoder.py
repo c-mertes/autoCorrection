@@ -11,10 +11,10 @@ from keras import backend as K
 class Autoencoder():
     def __init__(self, encoding_dim=2, size=10000, optimizer=Adam(lr=0.001),
                  choose_autoencoder=False, choose_encoder=False,
-                 choose_decoder=False, epochs=1100, batch_size=None, seed =1234):
+                 choose_decoder=False, epochs=1100, batch_size=None, seed = None):
         if seed is not None:
             tf.set_random_seed(seed)
-            os.environ['PYTHONHASHSEED'] = '0'
+            os.environ['PYTHONHASHSEED'] = seed
             session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
             sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
             K.set_session(sess)

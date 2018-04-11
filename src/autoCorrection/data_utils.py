@@ -15,7 +15,7 @@ class OutlierData():
 class OutInjectionFC():
     def __init__(self, input_data, outlier_prob=10.0**-3,
                  fold=None, sample_names=None, gene_names=None,
-                 counts_file = "out_file", seed = 1234):
+                 counts_file = "out_file", seed = None):
 
         self.input_data=input_data
         self.outlier_prob=outlier_prob
@@ -44,7 +44,8 @@ class OutInjectionFC():
     def get_outlier_data(self):
         injected = np.copy(self.input_data)
         data = self.input_data.flatten()
-        np.random.seed(self.seed)
+        if self.seed is not None:
+            np.random.seed(self.seed)
         idx=np.random.choice((1,0), size=(np.multiply(self.input_data.shape[0],
                                                       self.input_data.shape[1])),
                                                       p=(self.outlier_prob,
@@ -218,7 +219,7 @@ class DataCooker():
     def __init__(self, counts, size_factors=None,
                  inject_outliers=True, inject_on_pred=False,
                  only_prediction=False, inj_method="OutInjectionFC",
-                 pred_counts=None, pred_sf=None, seed=1234):
+                 pred_counts=None, pred_sf=None, seed = None):
         self.counts = counts
         self.inject_outliers = inject_outliers
         self.inject_outliers_on_pred = inject_on_pred
