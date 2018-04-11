@@ -76,3 +76,7 @@ docs/_build
 .bootstrap
 .appveyor.token
 *.bak
+
+# Rstudio
+.Rproj.user/
+*.Rproj
