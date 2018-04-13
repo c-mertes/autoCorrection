@@ -80,3 +80,5 @@ docs/_build
 # Rstudio
 .Rproj.user/
 *.Rproj
+.Rproj.user
+.Rhistory
