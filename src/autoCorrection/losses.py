@@ -7,10 +7,6 @@ import numpy as np
 # 
 THETA = [0.0]
 
-# where do we use this? can we remove it?
-EPSILON = 1e-10 
-LAMBDA = 1e-3
-
 def _nan2inf(x):
     return tf.where(tf.is_nan(x), tf.zeros_like(x)+np.inf, x)
 
