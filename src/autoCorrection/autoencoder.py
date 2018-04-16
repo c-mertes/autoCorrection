@@ -22,6 +22,7 @@ class Autoencoder():
         self.size = size
         self.epochs = epochs
         self.batch_size = batch_size
+        self.Mean_cutoff = lambda x: K.maximum(x, 1e-5)
         #self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e5)
         self.ClippedExp = lambda x: K.exp(x)  #, removed clipping
         self.Loglayer = lambda x: K.log(x + 1)
@@ -45,8 +46,9 @@ class Autoencoder():
         mean_scaled = Lambda(self.ClippedExp, output_shape=(self.size,), name="mean_scaled")(decoded)
         inv_sf = Lambda(self.Invert, output_shape=(self.size,), name="inv")(self.sf_layer)
         mean = Multiply()([mean_scaled, inv_sf])
+        mean_min = Lambda(self.Mean_cutoff, output_shape=(self.size,), name="mean_min")(mean)
         self.disp = ConstantDispersionLayer(name='dispersion')
-        self.output = self.disp(mean)
+        self.output = self.disp(mean_min)
         self.model = Model([self.input_layer, self.sf_layer], self.output)
         return self.model
 
