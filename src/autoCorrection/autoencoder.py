@@ -22,7 +22,10 @@ class Autoencoder():
         self.size = size
         self.epochs = epochs
         self.batch_size = batch_size
-        self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e5)
+        self.Mean_cutoff = lambda x: K.maximum(x, 1e-5)
+        #self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e5)
+        self.ClippedExp = lambda x: K.exp(x)  #, removed clipping
+        self.Loglayer = lambda x: K.log(x + 1)
         self.Invert = lambda x: K.pow(x, -1)
         self.choose_autoencoder = choose_autoencoder
         self.choose_encoder = choose_encoder
@@ -37,13 +40,15 @@ class Autoencoder():
         self.input_layer = Input(shape=(self.size,), name='inp')
         self.sf_layer = Input(shape=(self.size,), name='sf')
         self.normalized = Multiply()([self.input_layer, self.sf_layer]) #scale factor layer contains inversed sf see: data_utils.py, TrainTestPreparation
-        encoded = Dense(self.encoding_dim, name='encoder', use_bias=True)(self.normalized)
+        self.logcounts = Lambda(self.Loglayer, output_shape=(self.size,), name="logCounts")(self.normalized)
+        encoded = Dense(self.encoding_dim, name='encoder', use_bias=True)(self.logcounts)
         decoded = Dense(self.size, name='decoder', use_bias=True)(encoded)
         mean_scaled = Lambda(self.ClippedExp, output_shape=(self.size,), name="mean_scaled")(decoded)
         inv_sf = Lambda(self.Invert, output_shape=(self.size,), name="inv")(self.sf_layer)
         mean = Multiply()([mean_scaled, inv_sf])
+        mean_min = Lambda(self.Mean_cutoff, output_shape=(self.size,), name="mean_min")(mean)
         self.disp = ConstantDispersionLayer(name='dispersion')
-        self.output = self.disp(mean)
+        self.output = self.disp(mean_min)
         self.model = Model([self.input_layer, self.sf_layer], self.output)
         return self.model
 
