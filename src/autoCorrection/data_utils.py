@@ -96,7 +96,7 @@ class TrainTestPreparation():
         self.rescale_per_gene = rescale_per_gene
         self.rescale_per_sample = rescale_per_sample
         self.rescale_by_global_median = rescale_by_global_median
-        self.data = self.clip_high_values()
+        #self.data = self.clip_high_values()
         self.set_sf()
         if no_rescaling:
             self.splited_data = self.split_data(self.sf)
