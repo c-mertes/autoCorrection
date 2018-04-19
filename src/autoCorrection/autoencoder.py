@@ -23,8 +23,8 @@ class Autoencoder():
         self.epochs = epochs
         self.batch_size = batch_size
         self.Mean_cutoff = lambda x: K.maximum(x, 1e-5)
-        #self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e5)
-        self.ClippedExp = lambda x: K.exp(x)  #, removed clipping
+        self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e10)
+        #self.ClippedExp = lambda x: K.exp(x)  #, removed clipping
         self.Loglayer = lambda x: K.log(x + 1)
         self.Invert = lambda x: K.pow(x, -1)
         self.choose_autoencoder = choose_autoencoder
