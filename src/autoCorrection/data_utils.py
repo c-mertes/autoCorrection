@@ -217,7 +217,7 @@ class DataReader():
 
 class DataCooker():
     def __init__(self, counts, size_factors=None,
-                 inject_outliers=True, inject_on_pred=False,
+                 inject_outliers=True, inject_on_pred=True,
                  only_prediction=False, inj_method="OutInjectionFC",
                  pred_counts=None, pred_sf=None, seed = None):
         self.counts = counts
@@ -300,6 +300,8 @@ class DataCooker():
                                 'sf': count_data.processed_data.size_factor}
             y_true_idx_test = None
         if not self.only_prediction:
+            data = pred_noisy.outlier_data.data_with_outliers
+            count_data = self.get_count_data(data, self.sf)
             simple_train_test = self.prepare_simple(count_data)
             noisy_train_test = self.prepare_noisy(count_data)
             x_noisy_train = {'inp': noisy_train_test.splited_data.train,
