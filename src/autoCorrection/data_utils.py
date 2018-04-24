@@ -250,8 +250,8 @@ class DataCooker():
 
     def get_count_data(self, counts, sf):
         count_data = TrainTestPreparation(data=counts,sf=sf,
-                                  no_rescaling=False,
-                                  no_splitting=True)
+                                          no_rescaling=False,
+                                          no_splitting=True)
         return count_data
 
     def prepare_noisy(self, count_data):

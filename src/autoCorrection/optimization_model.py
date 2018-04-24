@@ -9,7 +9,7 @@ class OptimizationModel():
               encoding_dim=128, batch_size=None):
         size = train_data[0]["inp"].shape[1]
         ae = Autoencoder(choose_autoencoder=True, size=size,
-                         encoding_dim=encoding_dim, batch_size=batch_size)
+                         encoding_dim=encoding_dim, batch_size=batch_size, seed=1234)
         ae.model.compile(optimizer=Adam(lr=lr), loss=ae.loss)#metrics=['eval.loss']
         model = ae.model
         return model
