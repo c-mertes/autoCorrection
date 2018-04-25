@@ -60,14 +60,14 @@ setup(
     install_requires=[
         'tensorflow',
         'keras',
-        'h5py==2.8.0rc1',
-        'networkx==1.11',
+        'h5py>=2.8.0rc1',
+        'networkx>=1.11',
         'numpy',
         'kopt',
         'scipy',
         'sklearn',
         'pandas',
         'statsmodels',
-	    'pytest'
+        'pytest'
     ],
 )
