@@ -25,7 +25,8 @@ class Autoencoder():
         self.Mean_cutoff = lambda x: K.maximum(x, 1e-5)
         self.ClippedExp = lambda x: K.minimum(K.exp(x), 1e10)
         #self.ClippedExp = lambda x: K.exp(x)  #, removed clipping
-        self.Loglayer = lambda x: K.log(x + 1)
+        self.pseudoCountLayer = lambda x: x + 1
+        self.Loglayer = lambda x: K.log(x)
         self.Invert = lambda x: K.pow(x, -1)
         self.choose_autoencoder = choose_autoencoder
         self.choose_encoder = choose_encoder
@@ -38,8 +39,9 @@ class Autoencoder():
 
     def get_autoencoder(self):
         self.input_layer = Input(shape=(self.size,), name='inp')
+        self.pseudoCount = Lambda(self.pseudoCountLayer, output_shape=(self.size,), name="pseudoCount")(self.input_layer)
         self.sf_layer = Input(shape=(self.size,), name='sf')
-        self.normalized = Multiply()([self.input_layer, self.sf_layer]) #scale factor layer contains inversed sf see: data_utils.py, TrainTestPreparation
+        self.normalized = Multiply()([self.pseudoCount, self.sf_layer]) #scale factor layer contains inversed sf see: data_utils.py, TrainTestPreparation
         self.logcounts = Lambda(self.Loglayer, output_shape=(self.size,), name="logCounts")(self.normalized)
         encoded = Dense(self.encoding_dim, name='encoder', use_bias=True)(self.logcounts)
         decoded = Dense(self.size, name='decoder', use_bias=True)(encoded)
