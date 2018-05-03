@@ -56,7 +56,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3',
+    python_requires='>=3.2',
     install_requires=[
         'tensorflow',
         'keras',
