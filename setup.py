@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='autoCorrection',
-    version='0.2.1',
+    version='0.3.0',
     license='MIT license',
     description='...',
     long_description='%s\n%s' % (
