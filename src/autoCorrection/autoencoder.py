@@ -11,7 +11,7 @@ class Autoencoder():
     def __init__(self, coder_type, size, encoding_dim, seed=None):
         if seed is not None:
             tf.set_random_seed(seed)
-            os.environ['PYTHONHASHSEED'] = seed
+            os.environ['PYTHONHASHSEED'] = str(seed)
             session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
             sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
             K.set_session(sess)
