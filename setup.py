@@ -62,7 +62,7 @@ setup(
         'keras',
         'h5py>=2.8.0rc1',
         'networkx>=1.11',
-        'numpy',
+        'numpy>=1.13.1',
         'kopt',
         'scipy',
         'sklearn',
