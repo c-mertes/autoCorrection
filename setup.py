@@ -67,7 +67,7 @@ setup(
         'scipy',
         'sklearn',
         'pandas;python_version>="3.5"',
-        'pandas<0.21;python_version>="3.5"',
+        'pandas<0.21;python_version<"3.5"',
         'statsmodels',
         'pytest'
     ],
