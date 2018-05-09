@@ -25,11 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='autoCorrection',
-<<<<<<< HEAD
     version='0.3.0',
-=======
-    version='0.2.0',
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
     license='MIT license',
     description='...',
     long_description='%s\n%s' % (
@@ -60,34 +56,19 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-<<<<<<< HEAD
     python_requires='>=3.2',
     install_requires=[
         'tensorflow',
         'keras',
         'h5py==2.8.0rc1',
         'networkx==1.11',
-=======
-    python_requires='>=3',
-    install_requires=[
-        'tensorflow',
-        'keras',
-        'h5py>=2.8.0rc1',
-        'networkx>=1.11',
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
         'numpy',
         'kopt',
         'scipy',
         'sklearn',
-<<<<<<< HEAD
-        'pandas',
-        'statsmodels',
-	    'pytest'
-=======
         'pandas;python_version>="3.5"',
         'pandas<0.21;python_version<"3.5"',
         'statsmodels',
         'pytest'
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
     ],
 )

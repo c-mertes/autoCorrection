@@ -5,11 +5,6 @@ cache: pip
 
 matrix:
   include:
-<<<<<<< HEAD
-=======
-    - python: 3.2
-    - python: 3.3
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
     - python: 3.4
     - python: 3.5
     - python: 3.6

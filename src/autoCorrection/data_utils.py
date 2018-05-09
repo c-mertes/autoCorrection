@@ -96,11 +96,7 @@ class TrainTestPreparation():
         self.rescale_per_gene = rescale_per_gene
         self.rescale_per_sample = rescale_per_sample
         self.rescale_by_global_median = rescale_by_global_median
-<<<<<<< HEAD
         #self.data = self.clip_high_values()
-=======
-        self.data = self.clip_high_values()
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
         self.set_sf()
         if no_rescaling:
             self.splited_data = self.split_data(self.sf)
@@ -221,11 +217,7 @@ class DataReader():
 
 class DataCooker():
     def __init__(self, counts, size_factors=None,
-<<<<<<< HEAD
                  inject_outliers=True, inject_on_pred=True,
-=======
-                 inject_outliers=True, inject_on_pred=False,
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
                  only_prediction=False, inj_method="OutInjectionFC",
                  pred_counts=None, pred_sf=None, seed = None):
         self.counts = counts
@@ -308,11 +300,8 @@ class DataCooker():
                                 'sf': count_data.processed_data.size_factor}
             y_true_idx_test = None
         if not self.only_prediction:
-<<<<<<< HEAD
             data = pred_noisy.outlier_data.data_with_outliers
             count_data = self.get_count_data(data, self.sf)
-=======
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
             simple_train_test = self.prepare_simple(count_data)
             noisy_train_test = self.prepare_noisy(count_data)
             x_noisy_train = {'inp': noisy_train_test.splited_data.train,
@@ -335,14 +324,6 @@ class Evaluation():
     def get_correlations(self, data):
         rho, p = sp.stats.spearmanr(data, axis=1)
         return rho
-
-
-
-
-
-
-
-
 
 
 

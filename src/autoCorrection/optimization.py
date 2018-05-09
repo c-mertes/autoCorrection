@@ -12,12 +12,9 @@ import subprocess
 from kopt.utils import merge_dicts
 import pymongo
 import os
-<<<<<<< HEAD
 #scope bug
 from hyperopt.pyll.base import scope
 
-=======
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
 
 def print_exp(exp_name):
     print("-" * 40 + "\nexp_name: " + exp_name)
@@ -196,17 +193,11 @@ class Optimization():
         else:
             pv = ParamValues(
                 lr=hp.loguniform("lr", np.log(1e-4), np.log(1e-3)),
-<<<<<<< HEAD
                 q=scope.int(hp.qloguniform("q", np.log(10), np.log(100), 1)),
                 #q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,35),
                 epochs=scope.int(hp.qloguniform("epochs", np.log(10), np.log(500), 10)),
                 #epochs=(100, 125, 150, 175, 200, 250, 300, 400, 500, 700),
                 batch=(4, 8, 16, 32, 64, 128, 256)
-=======
-                q=(18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30),
-                epochs=(100, 120, 150, 170, 200, 250, 300, 400, 500),
-                batch=(16, 32, 50, 100, 128, 200)
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
             )
 
         hyper_params = {
@@ -214,19 +205,12 @@ class Optimization():
             },
             "model": {
                 "lr": pv.lr,
-<<<<<<< HEAD
                 #"encoding_dim": hp.choice("encoding_dim", pv.q),  ##
                 "encoding_dim": pv.q, 
             },
             "fit": {
                 #"epochs": hp.choice("epochs", pv.epochs),  #
                 "epochs": pv.epochs,
-=======
-                "encoding_dim": hp.choice("encoding_dim", pv.q),  ##
-            },
-            "fit": {
-                "epochs": hp.choice("epochs", pv.epochs),  #
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
                 "batch_size": hp.choice("batch_size", pv.batch)
             }
         }
@@ -236,7 +220,4 @@ class Optimization():
                     self.db_name, self.exp_name, self.ip, self.port, self.nr_of_trials,
                     self.nr_of_workers)
         run()
-<<<<<<< HEAD
-=======
 
->>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
