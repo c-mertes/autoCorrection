@@ -45,7 +45,10 @@ test1_weights.h5
 nosetests.xml
 *.cover
 .hypothesis/
+<<<<<<< HEAD
 saved_models/
+=======
+>>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
 
 # Translations
 *.mo
@@ -77,6 +80,11 @@ docs/_build
 .bootstrap
 .appveyor.token
 *.bak
+<<<<<<< HEAD
+=======
+.ipynb_checkpoints
+saved_models
+>>>>>>> b48e5f7fc6b17c1ec577579b6fef97565f9494c6
 
 # Rstudio
 .Rproj.user/
